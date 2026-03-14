@@ -7,6 +7,7 @@
         <!-- Firebase SDKs -->
         <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
         <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+        <script src="scripts/app_permissoes.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
         
@@ -41,6 +42,14 @@
 <div class="login-card" style="margin-bottom: 24px;">
         <h1>MY HAIR</h1>
         <div class="subtitle">Gestão para Profissionais de Beleza</div>
+
+    <div style="text-align:left; background:#f7fbff; border:1px solid #dcecf8; border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px; color:#35516b;">
+        <div style="font-weight:bold; margin-bottom:6px;">Permissões do app</div>
+        <div>Notificações: <span id="statusPermNotificacoes">Pendente</span></div>
+        <div>Localização: <span id="statusPermLocalizacao">Pendente</span></div>
+        <div>Câmera: <span id="statusPermCamera">Pendente</span></div>
+        <button id="btnPermissoesApp" type="button" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1px solid #b3e5fc; background:#fff; color:#0288d1; font-weight:bold; cursor:pointer;">AUTORIZAR PERMISSÕES</button>
+    </div>
 
         <input type="email" id="email" placeholder="E-mail ou CPF">
         <input type="password" id="senha" placeholder="Senha">
@@ -151,12 +160,19 @@
         }
 
         try {
+            if (window.MyHairPermissoes) {
+                await window.MyHairPermissoes.solicitarPermissoesBasicas();
+            }
             await auth.signInWithEmailAndPassword(email, senha);
             window.location.href = 'visaogeral.html';
         } catch (err) {
             alert('Erro no login: ' + (err.code || err.message));
         }
     });
+
+    if (window.MyHairPermissoes) {
+        window.MyHairPermissoes.initPainelPermissoes();
+    }
 </script>
 
 </body>

@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/app_permissoes.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; color: #000; }
         header { background-color: #fff; padding: 16px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,0.08); border-radius: 12px; margin-bottom: 12px; max-width: 320px; margin-left: auto; margin-right: auto; }
@@ -89,6 +90,9 @@
         };
 
         try {
+            if (window.MyHairPermissoes) {
+                await window.MyHairPermissoes.solicitarPermissoesBasicas();
+            }
             await auth.createUserWithEmailAndPassword(email, senha);
             await db.collection("clientes").add(dados);
             alert("Cadastro realizado com sucesso! Bem-vindo ao MY HAIR.");
@@ -102,6 +106,10 @@
             btn.innerText = "FINALIZAR CADASTRO";
             btn.disabled = false;
         }
+    }
+
+    if (window.MyHairPermissoes) {
+        window.MyHairPermissoes.initPainelPermissoes();
     }
 </script>
 </body>

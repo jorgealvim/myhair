@@ -7,9 +7,11 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/app_permissoes.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; min-height: 100vh; padding: 20px; }
+        body.conteudo-protegido { user-select: none; -webkit-user-select: none; }
 
         .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
         .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
@@ -194,6 +196,9 @@
     let favoritosEntrada = new Set();
     let clienteAtualNome = 'Cliente';
     let solicitacoesCliente = [];
+    let unsubscribeSolicitacoesPrestador = null;
+    let solicitacoesPrestadorNotificadas = new Set();
+    let snapshotPrestadorInicializado = false;
 
     const ICONES_SERVICO = {
         cabelo: { icon: '💇‍♂️', label: 'Cabelo' },
@@ -233,6 +238,77 @@
 
         textoModo.classList.remove('dev');
         textoModo.textContent = 'Favoritos valem para ambos: cliente e salão.';
+    }
+
+    function abrirPerfilPrestador() {
+        const idPerfil = encodeURIComponent(identificadorAtual || '');
+        const sufixoDev = getSufixoModoDev();
+        window.location.href = `perfil.html?id=${idPerfil}&tipo=salao${sufixoDev}`;
+    }
+
+    function notificarPrestadorSolicitacao(solicitacao) {
+        if (!window.MyHairPermissoes || !window.MyHairPermissoes.podeNotificar()) {
+            return;
+        }
+
+        const localTxt = solicitacao.localPrestacao === 'domicilio' ? 'Domicílio' : 'Empresa';
+        const corpo = `${solicitacao.clienteNome || 'Cliente'} - ${solicitacao.data || ''} ${solicitacao.hora || ''} - ${localTxt}`.trim();
+        const notification = new Notification('Novo agendamento pendente', {
+            body: corpo,
+            tag: `sol_prest_${solicitacao.id || 'nova'}`,
+        });
+
+        notification.onclick = function () {
+            window.focus();
+            abrirPerfilPrestador();
+            notification.close();
+        };
+    }
+
+    function pararMonitorSolicitacoesPrestador() {
+        if (unsubscribeSolicitacoesPrestador) {
+            unsubscribeSolicitacoesPrestador();
+            unsubscribeSolicitacoesPrestador = null;
+        }
+    }
+
+    function iniciarMonitorSolicitacoesPrestador() {
+        pararMonitorSolicitacoesPrestador();
+
+        if (tipoAtual !== 'salao' || !identificadorAtual || identificadorAtual.startsWith('anonimo_')) {
+            return;
+        }
+
+        solicitacoesPrestadorNotificadas = new Set();
+        snapshotPrestadorInicializado = false;
+
+        unsubscribeSolicitacoesPrestador = db.collection('solicitacoes_agendamento')
+            .where('prestadorId', '==', identificadorAtual)
+            .where('status', '==', 'pendente')
+            .onSnapshot((snap) => {
+                if (!snapshotPrestadorInicializado) {
+                    snap.forEach((doc) => solicitacoesPrestadorNotificadas.add(doc.id));
+                    snapshotPrestadorInicializado = true;
+                    return;
+                }
+
+                snap.docChanges().forEach((change) => {
+                    if (change.type !== 'added') {
+                        return;
+                    }
+                    if (solicitacoesPrestadorNotificadas.has(change.doc.id)) {
+                        return;
+                    }
+                    solicitacoesPrestadorNotificadas.add(change.doc.id);
+                    notificarPrestadorSolicitacao({ id: change.doc.id, ...change.doc.data() });
+                });
+            }, (error) => {
+                console.error('Erro ao monitorar solicitações do prestador:', error);
+            });
+    }
+
+    function aplicarProtecaoConteudo() {
+        document.body.classList.toggle('conteudo-protegido', !estaEmModoDesenvolvedor());
     }
 
     function getFavoritos() {
@@ -801,6 +877,7 @@
             }
 
             await carregarSolicitacoesCliente();
+            iniciarMonitorSolicitacoesPrestador();
             
             aplicarFiltros();
         } catch (e) {
@@ -945,6 +1022,10 @@
     auth.onAuthStateChanged(async () => {
         atualizarIdentificadorAtual();
         atualizarIndicadorModoDev();
+        aplicarProtecaoConteudo();
+        if (window.MyHairPermissoes) {
+            window.MyHairPermissoes.solicitarNotificacoes();
+        }
         await carregarProfissionais();
     });
 
@@ -956,8 +1037,21 @@
 
     window.onload = () => {
         atualizarIndicadorModoDev();
+        aplicarProtecaoConteudo();
         carregarProfissionais();
     };
+
+    ['copy', 'cut', 'contextmenu', 'selectstart', 'dragstart'].forEach((evento) => {
+        document.addEventListener(evento, (e) => {
+            if (!estaEmModoDesenvolvedor()) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    window.addEventListener('beforeunload', () => {
+        pararMonitorSolicitacoesPrestador();
+    });
 </script>
 </body>
 </html>

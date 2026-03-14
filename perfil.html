@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/app_permissoes.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; color: #333; min-height: 100vh; padding: 20px; }
@@ -60,6 +61,7 @@
         .btn-solicitacao { flex: 1; border: none; border-radius: 8px; font-size: 10px; font-weight: bold; padding: 7px 8px; cursor: pointer; }
         .btn-aceitar { background: #dff4e6; color: #1f6a36; }
         .btn-recusar { background: #fde8e8; color: #8d2c2c; }
+        .conteudo-protegido { user-select: none; -webkit-user-select: none; }
         
         /* Tabelas */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
@@ -183,6 +185,9 @@
     let disponibilidadeMarcada = {};
     let arrastoDisponibilidadeAtivo = false;
     let arrastoDisponibilidadeValor = false;
+    let unsubscribeSolicitacoesTempoReal = null;
+    let solicitacoesNotificadas = new Set();
+    let solicitacoesSnapshotInicializado = false;
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
@@ -328,9 +333,15 @@
         return tipoPerfilAtual === 'salao' && tipoAtual === 'salao' && getIdentificadorPerfil() === identificadorAtual;
     }
 
+    function aplicarProtecaoConteudo() {
+        const protegido = !podeEditarPerfil() && !estaEmModoDesenvolvedor();
+        document.body.classList.toggle('conteudo-protegido', protegido);
+    }
+
     function aplicarPermissoesEdicao() {
         const permitido = podeEditarPerfil();
         atualizarStatusAcesso();
+        aplicarProtecaoConteudo();
 
         document.querySelectorAll('#agenda input, #agenda button.btn-disponivel').forEach((el) => {
             el.disabled = !permitido;
@@ -383,12 +394,83 @@
             <div class="item-solicitacao">
                 <p><strong>${solicitacao.clienteNome || 'Cliente'}</strong></p>
                 <p>${solicitacao.data} às ${solicitacao.hora}</p>
+                <p>${solicitacao.localPrestacao === 'domicilio' ? 'Local: Domicílio' : 'Local: Empresa'}</p>
                 <div class="acoes-solicitacao">
                     <button type="button" class="btn-solicitacao btn-aceitar" onclick="responderSolicitacaoAgendamento('${solicitacao.id}', 'aceito')">ACEITAR</button>
                     <button type="button" class="btn-solicitacao btn-recusar" onclick="responderSolicitacaoAgendamento('${solicitacao.id}', 'recusado')">RECUSAR</button>
                 </div>
             </div>
         `).join('');
+    }
+
+    function pararMonitorSolicitacoesTempoReal() {
+        if (unsubscribeSolicitacoesTempoReal) {
+            unsubscribeSolicitacoesTempoReal();
+            unsubscribeSolicitacoesTempoReal = null;
+        }
+    }
+
+    function abrirPerfilParaSolicitacoes() {
+        const idPerfil = encodeURIComponent(getIdentificadorPerfil());
+        const tipoPerfil = encodeURIComponent(tipoPerfilAtual || 'salao');
+        const sufixoDev = estaEmModoDesenvolvedor() ? '&dev=1' : '';
+        window.location.href = `perfil.html?id=${idPerfil}&tipo=${tipoPerfil}${sufixoDev}`;
+    }
+
+    function notificarSolicitacaoAgendamento(solicitacao) {
+        if (!window.MyHairPermissoes || !window.MyHairPermissoes.podeNotificar()) {
+            return;
+        }
+
+        const localTxt = solicitacao.localPrestacao === 'domicilio' ? 'Domicílio' : 'Empresa';
+        const corpo = `${solicitacao.clienteNome || 'Cliente'} - ${solicitacao.data || ''} ${solicitacao.hora || ''} - ${localTxt}`.trim();
+        const notification = new Notification('Nova solicitação de agendamento', {
+            body: corpo,
+            tag: `sol_${solicitacao.id || 'nova'}`,
+        });
+
+        notification.onclick = function () {
+            window.focus();
+            abrirPerfilParaSolicitacoes();
+            notification.close();
+        };
+    }
+
+    function iniciarMonitorSolicitacoesTempoReal() {
+        pararMonitorSolicitacoesTempoReal();
+
+        if (!podeGerenciarSolicitacoes()) {
+            return;
+        }
+
+        solicitacoesNotificadas = new Set();
+        solicitacoesSnapshotInicializado = false;
+
+        unsubscribeSolicitacoesTempoReal = db.collection('solicitacoes_agendamento')
+            .where('prestadorId', '==', getIdentificadorPerfil())
+            .where('status', '==', 'pendente')
+            .onSnapshot((snap) => {
+                if (!solicitacoesSnapshotInicializado) {
+                    snap.forEach((doc) => solicitacoesNotificadas.add(doc.id));
+                    solicitacoesSnapshotInicializado = true;
+                    return;
+                }
+
+                snap.docChanges().forEach((change) => {
+                    if (change.type !== 'added') {
+                        return;
+                    }
+                    if (solicitacoesNotificadas.has(change.doc.id)) {
+                        return;
+                    }
+                    solicitacoesNotificadas.add(change.doc.id);
+                    notificarSolicitacaoAgendamento({ id: change.doc.id, ...change.doc.data() });
+                });
+
+                carregarSolicitacoesPendentes().catch(() => {});
+            }, (error) => {
+                console.error('Erro no monitor de solicitações:', error);
+            });
     }
 
     async function carregarSolicitacoesPendentes() {
@@ -909,6 +991,7 @@
             atualizarBotaoFavorito();
             aplicarPermissoesEdicao();
             await carregarSolicitacoesPendentes();
+            iniciarMonitorSolicitacoesTempoReal();
         } catch (error) {
             console.error('Erro ao carregar perfil:', error);
         }
@@ -931,6 +1014,21 @@
 
     auth.onAuthStateChanged(() => {
         atualizarIdentificadorAtual();
+        if (window.MyHairPermissoes) {
+            window.MyHairPermissoes.solicitarNotificacoes();
+        }
+    });
+
+    ['copy', 'cut', 'contextmenu', 'selectstart', 'dragstart'].forEach((evento) => {
+        document.addEventListener(evento, (e) => {
+            if (!podeEditarPerfil() && !estaEmModoDesenvolvedor()) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    window.addEventListener('beforeunload', () => {
+        pararMonitorSolicitacoesTempoReal();
     });
 </script>
 </body>

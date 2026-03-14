@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/app_permissoes.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; color: #000; }
         header { background-color: #fff; padding: 16px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,0.08); border-radius: 12px; margin-bottom: 12px; max-width: 320px; margin-left: auto; margin-right: auto; }
@@ -43,6 +44,9 @@
         .btn-edit { flex: 1; padding: 12px; background: #fff; border: 1px solid #b3e5fc; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-delete { flex: 1; padding: 12px; background: #fff; border: 1px solid #ffcdd2; border-radius: 8px; cursor: pointer; font-weight: bold; color: #d32f2f; }
         .loading { font-size: 11px; color: #0288d1; display: none; }
+        .status-acesso { margin-top: 12px; padding: 8px 10px; border-radius: 8px; background: #f5f7fa; color: #4d5c69; font-size: 11px; font-weight: bold; text-align: center; }
+        .status-acesso.owner { background: #e7f8ed; color: #1c7b3a; }
+        .status-acesso.viewer { background: #fdeaea; color: #a13434; }
     </style>
 </head>
 <body>
@@ -160,6 +164,8 @@
                 <button type="button" class="btn-edit" onclick="habilitarEdicao()">EDITAR DADOS</button>
                 <button type="button" class="btn-delete" onclick="excluirCadastro()">EXCLUIR CONTA</button>
             </div>
+
+            <div id="statusAcessoCadastro" class="status-acesso">Verificando permissões...</div>
         </form>
     </div>
 </main>
@@ -179,10 +185,160 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let idDocFirebase = null; 
+    const params = new URLSearchParams(window.location.search);
+    const modoDesenvolvedorAtivo = params.get('dev') === '1'
+        || params.get('modo') === 'dev'
+        || localStorage.getItem('myhair_modo_dev') === '1';
+    let idDocFirebase = null;
+    let cadastroCarregado = null;
+    let edicaoLiberada = false;
 
     const idGerado = localStorage.getItem('usuarioID') || "MH-NOVO";
     document.getElementById('displayID').innerText = idGerado;
+
+    function estaEmModoDesenvolvedor() {
+        return modoDesenvolvedorAtivo;
+    }
+
+    function obterEmailAutenticado() {
+        return (auth.currentUser?.email || '').trim().toLowerCase();
+    }
+
+    function podeGerenciarCadastro() {
+        if (estaEmModoDesenvolvedor()) {
+            return true;
+        }
+
+        if (!cadastroCarregado) {
+            return true;
+        }
+
+        const emailAuth = obterEmailAutenticado();
+        const emailCadastro = String(cadastroCarregado.email || '').trim().toLowerCase();
+        return Boolean(emailAuth && emailCadastro && emailAuth === emailCadastro);
+    }
+
+    function atualizarStatusAcessoCadastro() {
+        const status = document.getElementById('statusAcessoCadastro');
+        if (!status) {
+            return;
+        }
+
+        if (estaEmModoDesenvolvedor()) {
+            status.className = 'status-acesso owner';
+            status.textContent = 'MODO DESENVOLVEDOR: edição e exclusão liberadas para manutenção.';
+            return;
+        }
+
+        if (!cadastroCarregado) {
+            status.className = 'status-acesso owner';
+            status.textContent = 'Novo cadastro: você pode preencher e salvar seus próprios dados.';
+            return;
+        }
+
+        if (podeGerenciarCadastro()) {
+            status.className = 'status-acesso owner';
+            status.textContent = 'Dono do cadastro: edição e exclusão liberadas.';
+            return;
+        }
+
+        status.className = 'status-acesso viewer';
+        status.textContent = 'Somente o dono do perfil pode alterar ou excluir estes dados.';
+    }
+
+    function aplicarPermissoesCadastro() {
+        const permitido = edicaoLiberada && podeGerenciarCadastro();
+        const form = document.getElementById('formGeral');
+        if (!form) {
+            return;
+        }
+
+        form.querySelectorAll('input, select, textarea').forEach((campo) => {
+            if (campo.id === 'senha' || campo.id === 'confirmarSenha') {
+                campo.disabled = !permitido && Boolean(cadastroCarregado);
+                return;
+            }
+            campo.disabled = !permitido;
+        });
+
+        const btnSalvar = document.querySelector('.btn-save');
+        const btnEditar = document.querySelector('.btn-edit');
+        const btnExcluir = document.querySelector('.btn-delete');
+        if (btnSalvar) {
+            btnSalvar.disabled = !permitido;
+        }
+        if (btnEditar) {
+            btnEditar.disabled = !podeGerenciarCadastro();
+        }
+        if (btnExcluir) {
+            btnExcluir.disabled = !podeGerenciarCadastro() || !idDocFirebase;
+        }
+
+        atualizarStatusAcessoCadastro();
+    }
+
+    function preencherCheckboxes(nome, valores) {
+        const lista = Array.isArray(valores) ? valores : [];
+        document.querySelectorAll(`input[name="${nome}"]`).forEach((item) => {
+            item.checked = lista.includes(item.value);
+        });
+    }
+
+    function preencherFormulario(dados) {
+        document.getElementById('tipoConta').value = dados.tipoConta || 'PF';
+        mudarTipo();
+        document.getElementById('documento').value = dados.documento || '';
+        document.getElementById('nome').value = dados.nome || '';
+        document.getElementById('fantasia').value = dados.fantasia || '';
+        document.getElementById('whats').value = dados.whatsapp || dados.whats || '';
+        document.getElementById('email').value = dados.email || '';
+        document.getElementById('boasVindas').value = dados.boasVindas || '';
+        document.getElementById('cep').value = dados.cep || '';
+        document.getElementById('rua').value = dados.endereco || dados.rua || '';
+        document.getElementById('numero').value = dados.numero || '';
+        document.getElementById('complemento').value = dados.complemento || '';
+        document.getElementById('bairro').value = dados.bairro || '';
+        document.getElementById('cidade').value = [dados.cidade || '', dados.uf || ''].filter(Boolean).join('/');
+        document.getElementById('banco').value = dados.banco || '';
+        document.getElementById('ag').value = dados.agencia || '';
+        document.getElementById('cc').value = dados.conta || '';
+        preencherCheckboxes('servicos', dados.servicosOferecidos);
+        preencherCheckboxes('produtos', dados.produtosVenda);
+        preencherCheckboxes('localServico', dados.locaisPrestacao);
+        preencherCheckboxes('retiradaProduto', dados.formasRetirada);
+    }
+
+    async function carregarCadastroExistente() {
+        let registro = null;
+        let docId = null;
+
+        const docDireto = await db.collection('usuarios').doc(idGerado).get();
+        if (docDireto.exists) {
+            registro = docDireto.data();
+            docId = docDireto.id;
+        } else {
+            const busca = await db.collection('usuarios').where('idSistema', '==', idGerado).limit(1).get();
+            if (!busca.empty) {
+                const doc = busca.docs[0];
+                registro = doc.data();
+                docId = doc.id;
+            }
+        }
+
+        if (!registro) {
+            cadastroCarregado = null;
+            idDocFirebase = null;
+            edicaoLiberada = true;
+            aplicarPermissoesCadastro();
+            return;
+        }
+
+        cadastroCarregado = registro;
+        idDocFirebase = docId;
+        preencherFormulario(registro);
+        edicaoLiberada = false;
+        aplicarPermissoesCadastro();
+    }
 
     function mudarTipo() {
         const tipo = document.getElementById('tipoConta').value;
@@ -223,6 +379,15 @@
     }
 
     async function salvarCadastro() {
+        if (!podeGerenciarCadastro()) {
+            alert('Somente o dono do perfil pode alterar estes dados.');
+            return;
+        }
+
+        if (window.MyHairPermissoes) {
+            await window.MyHairPermissoes.solicitarPermissoesBasicas();
+        }
+
         const senha = document.getElementById('senha').value;
         const confirmar = document.getElementById('confirmarSenha').value;
         const email = document.getElementById('email').value.trim();
@@ -301,11 +466,21 @@
     }
 
     function habilitarEdicao() {
+        if (!podeGerenciarCadastro()) {
+            alert('Somente o dono do perfil pode editar estes dados.');
+            return;
+        }
+        edicaoLiberada = true;
+        aplicarPermissoesCadastro();
         alert("Modo edição ativado.");
         document.getElementById('nome').focus();
     }
 
     async function excluirCadastro() {
+        if (!podeGerenciarCadastro()) {
+            alert('Somente o dono do perfil pode excluir esta conta.');
+            return;
+        }
         if (!idDocFirebase) return alert("Salve o cadastro antes de excluir.");
         if (confirm("Deseja realmente apagar sua conta?")) {
             try {
@@ -314,6 +489,22 @@
                 window.location.href = "index.html";
             } catch (e) { alert("Erro ao excluir."); }
         }
+    }
+
+    auth.onAuthStateChanged(() => {
+        carregarCadastroExistente().catch((error) => {
+            console.error('Erro ao carregar cadastro:', error);
+            aplicarPermissoesCadastro();
+        });
+    });
+
+    carregarCadastroExistente().catch((error) => {
+        console.error('Erro ao carregar cadastro:', error);
+        aplicarPermissoesCadastro();
+    });
+
+    if (window.MyHairPermissoes) {
+        window.MyHairPermissoes.initPainelPermissoes();
     }
 </script>
 </body>

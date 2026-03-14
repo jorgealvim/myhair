@@ -1,0 +1,38 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function authEmail() {
+      return isSignedIn() ? request.auth.token.email : null;
+    }
+
+    function isOwnerByEmail(email) {
+      return isSignedIn() && email != null && authEmail() == email;
+    }
+
+    match /usuarios/{documentId} {
+      allow read: if true;
+      allow create: if isOwnerByEmail(request.resource.data.email);
+      allow update, delete: if isOwnerByEmail(resource.data.email);
+    }
+
+    match /clientes/{documentId} {
+      allow read: if true;
+      allow create: if isOwnerByEmail(request.resource.data.email);
+      allow update, delete: if isOwnerByEmail(resource.data.email);
+    }
+
+    match /favoritos/{documentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    match /solicitacoes_agendamento/{documentId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+  }
+}

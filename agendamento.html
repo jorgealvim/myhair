@@ -7,6 +7,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/app_permissoes.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
         body { font-family: 'Segoe UI', sans-serif; background: var(--pink); margin: 0; min-height: 100vh; padding: 24px; color: #2a2a2a; }
@@ -23,6 +24,11 @@
         .grade-horarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
         .btn-hora { border: 1px solid #c8dced; background: #f2f9ff; color: #0d5685; border-radius: 10px; padding: 10px; font-weight: bold; cursor: pointer; }
         .btn-hora.ativo { background: var(--blue); border-color: #9fd8f5; color: #053b5c; }
+        .locais-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #dbe8f2; }
+        .locais-opcoes { display: flex; gap: 14px; flex-wrap: wrap; }
+        .locais-opcoes label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #39546a; margin: 0; font-weight: 600; }
+        .locais-opcoes input { width: auto; margin: 0; }
+        .status-local { margin-top: 8px; font-size: 12px; color: #5b7184; }
         .status { font-size: 13px; color: #666; margin: 0; }
         .btn-confirmar { margin-top: 12px; width: 100%; border: none; border-radius: 10px; background: var(--blue); color: #053b5c; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; }
         .painel-status { margin-top: 12px; border: 1px solid #d9e8f3; border-radius: 12px; padding: 12px; background: #f8fcff; }
@@ -65,6 +71,14 @@
         <div class="bloco">
             <label>Horários disponíveis</label>
             <div id="gradeHorarios" class="grade-horarios"></div>
+            <div class="locais-wrap">
+                <label>Local de prestação do serviço</label>
+                <div class="locais-opcoes">
+                    <label><input type="checkbox" id="localEmpresa"> Na empresa</label>
+                    <label><input type="checkbox" id="localDomicilio"> A domicílio</label>
+                </div>
+                <p id="statusLocalPrestacao" class="status-local">Selecione onde será realizado o serviço.</p>
+            </div>
             <p id="statusHorario" class="status" style="margin-top:8px;">Selecione um horário para solicitar agendamento.</p>
             <button id="btnConfirmar" class="btn-confirmar" type="button">SOLICITAR AGENDAMENTO</button>
         </div>
@@ -109,6 +123,125 @@
 
     function sanitizarId(valor) {
         return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function normalizarTexto(valor) {
+        return String(valor || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .trim();
+    }
+
+    function obterLocaisPrestacaoCompat(registro) {
+        const origem = [
+            ...(Array.isArray(registro?.locaisPrestacao) ? registro.locaisPrestacao : []),
+            ...(Array.isArray(registro?.localServico) ? registro.localServico : []),
+        ];
+
+        if (typeof registro?.locaisPrestacao === 'string') {
+            origem.push(...registro.locaisPrestacao.split(/[,;|]/));
+        }
+
+        if (typeof registro?.localServico === 'string') {
+            origem.push(...registro.localServico.split(/[,;|]/));
+        }
+
+        let empresa = false;
+        let domicilio = false;
+
+        origem.forEach((item) => {
+            const valor = normalizarTexto(item);
+            if (!valor) {
+                return;
+            }
+            if (valor.includes('empresa')) {
+                empresa = true;
+            }
+            if (valor.includes('domicilio')) {
+                domicilio = true;
+            }
+        });
+
+        if (!empresa && !domicilio) {
+            return { empresa: true, domicilio: true, origem: 'nao_informado' };
+        }
+
+        return { empresa, domicilio, origem: 'cadastro' };
+    }
+
+    function obterLocalPrestacaoSelecionado() {
+        const empresa = document.getElementById('localEmpresa')?.checked;
+        const domicilio = document.getElementById('localDomicilio')?.checked;
+        if (empresa && !domicilio) {
+            return 'empresa';
+        }
+        if (domicilio && !empresa) {
+            return 'domicilio';
+        }
+        return '';
+    }
+
+    function atualizarLocaisPrestacaoUI() {
+        const checkEmpresa = document.getElementById('localEmpresa');
+        const checkDomicilio = document.getElementById('localDomicilio');
+        const status = document.getElementById('statusLocalPrestacao');
+        if (!checkEmpresa || !checkDomicilio || !status) {
+            return;
+        }
+
+        const locais = obterLocaisPrestacaoCompat(prestadorAtual);
+        checkEmpresa.disabled = !locais.empresa;
+        checkDomicilio.disabled = !locais.domicilio;
+
+        if (!checkEmpresa.disabled && checkDomicilio.disabled) {
+            checkEmpresa.checked = true;
+            checkDomicilio.checked = false;
+            status.textContent = 'Este parceiro atende apenas na empresa.';
+            return;
+        }
+
+        if (checkEmpresa.disabled && !checkDomicilio.disabled) {
+            checkEmpresa.checked = false;
+            checkDomicilio.checked = true;
+            status.textContent = 'Este parceiro atende apenas a domicílio.';
+            return;
+        }
+
+        if (!checkEmpresa.checked && !checkDomicilio.checked) {
+            checkEmpresa.checked = true;
+        }
+        if (checkEmpresa.checked && checkDomicilio.checked) {
+            checkDomicilio.checked = false;
+        }
+        status.textContent = 'Selecione onde será realizado o serviço.';
+    }
+
+    function configurarExclusividadeLocais() {
+        const checkEmpresa = document.getElementById('localEmpresa');
+        const checkDomicilio = document.getElementById('localDomicilio');
+        const status = document.getElementById('statusLocalPrestacao');
+        if (!checkEmpresa || !checkDomicilio || !status) {
+            return;
+        }
+
+        checkEmpresa.addEventListener('change', () => {
+            if (checkEmpresa.checked) {
+                checkDomicilio.checked = false;
+            }
+            if (!checkEmpresa.checked && !checkDomicilio.checked) {
+                status.textContent = 'Selecione um local: empresa ou domicílio.';
+            }
+        });
+
+        checkDomicilio.addEventListener('change', () => {
+            if (checkDomicilio.checked) {
+                checkEmpresa.checked = false;
+            }
+            if (!checkEmpresa.checked && !checkDomicilio.checked) {
+                status.textContent = 'Selecione um local: empresa ou domicílio.';
+            }
+        });
     }
 
     function estaEmModoDesenvolvedor() {
@@ -293,6 +426,7 @@
         const nome = prestadorAtual?.fantasia || prestadorAtual?.nome || decodeURIComponent(prestadorNomeParam || 'Prestador');
         document.getElementById('nomePrestador').textContent = nome;
         document.getElementById('idPrestador').textContent = `ID: ${prestadorAtual?.idSistema || prestadorAtual?.idDoc || prestadorId}`;
+        atualizarLocaisPrestacaoUI();
     }
 
     function listarHorariosDisponiveis() {
@@ -355,6 +489,22 @@
             return;
         }
 
+        const localPrestacao = obterLocalPrestacaoSelecionado();
+        if (!localPrestacao) {
+            alert('Selecione o local de prestação do serviço (empresa ou domicílio).');
+            return;
+        }
+
+        const locaisPrestador = obterLocaisPrestacaoCompat(prestadorAtual);
+        if (localPrestacao === 'empresa' && !locaisPrestador.empresa) {
+            alert('Este parceiro só presta serviços a domicilio.');
+            return;
+        }
+        if (localPrestacao === 'domicilio' && !locaisPrestador.domicilio) {
+            alert('Este parceiro só presta serviços na empresa.');
+            return;
+        }
+
         const docId = `sol_${sanitizarId(clienteAtual.id)}__${sanitizarId(prestadorId)}__${data.replace(/-/g, '')}_${horaSelecionada.replace(':', '')}`;
         const ref = db.collection('solicitacoes_agendamento').doc(docId);
 
@@ -372,6 +522,7 @@
             prestadorNome: prestadorAtual.fantasia || prestadorAtual.nome || 'Prestador',
             clienteId: clienteAtual.id,
             clienteNome: clienteAtual.nome,
+            localPrestacao,
             data,
             hora: horaSelecionada,
             status: 'pendente',
@@ -382,13 +533,14 @@
         solicitacaoAtualId = docId;
         monitorarSolicitacao(solicitacaoAtualId);
         renderizarStatusSolicitacao({ status: 'pendente', mensagemPrestador: 'Aguardando resposta do prestador.' });
-        alert('Solicitação enviada para o prestador. Você pode acompanhar o status nesta tela.');
+        alert('Serviço agendado com sucesso.');
     }
 
     async function iniciarPagina() {
         document.getElementById('dataAgendamento').value = hojeISO();
         document.getElementById('dataAgendamento').addEventListener('change', listarHorariosDisponiveis);
         document.getElementById('btnConfirmar').addEventListener('click', solicitarAgendamento);
+        configurarExclusividadeLocais();
 
         await identificarClienteAtual();
         atualizarIndicadorModoDev();
@@ -398,6 +550,9 @@
     }
 
     auth.onAuthStateChanged(() => {
+        if (window.MyHairPermissoes) {
+            window.MyHairPermissoes.solicitarNotificacoes();
+        }
         iniciarPagina().catch((error) => {
             console.error(error);
             alert('Erro ao carregar a tela de agendamento.');
