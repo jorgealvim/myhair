@@ -228,6 +228,8 @@
     let comprasNotificadas = new Set();
     let comprasSnapshotInicializado = false;
     let minhaNotaSelecionada = 0;
+    let eventosPerfilConfigurados = false;
+    let carregamentoPerfilEmAndamento = false;
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
@@ -561,7 +563,7 @@
         atualizarStatusAcesso();
         aplicarProtecaoConteudo();
 
-        document.querySelectorAll('#agenda input, #agenda button.btn-disponivel').forEach((el) => {
+        document.querySelectorAll('#agenda .slot-campo, #agenda button.btn-disponivel').forEach((el) => {
             el.disabled = !permitido;
         });
 
@@ -1289,6 +1291,11 @@
     }
 
     async function carregarPerfil() {
+        if (carregamentoPerfilEmAndamento) {
+            return;
+        }
+
+        carregamentoPerfilEmAndamento = true;
         document.getElementById('idProfissional').innerText = "ID: " + idUsuario;
 
         try {
@@ -1372,11 +1379,17 @@
             iniciarMonitorComprasTempoReal();
         } catch (error) {
             console.error('Erro ao carregar perfil:', error);
+        } finally {
+            carregamentoPerfilEmAndamento = false;
         }
     }
 
-    // Ao carregar a página
-    window.onload = () => {
+    function configurarEventosPerfil() {
+        if (eventosPerfilConfigurados) {
+            return;
+        }
+
+        eventosPerfilConfigurados = true;
         carregarSlotsAgenda();
         window.addEventListener('mouseup', encerrarArrastoDisponibilidade);
         window.addEventListener('touchend', encerrarArrastoDisponibilidade);
@@ -1387,7 +1400,11 @@
         if (btnFavoritoPerfil) {
             btnFavoritoPerfil.addEventListener('click', alternarFavoritoPerfil);
         }
-        carregarPerfil();
+    }
+
+    // Ao carregar a página
+    window.onload = () => {
+        configurarEventosPerfil();
     };
 
     auth.onAuthStateChanged(() => {
@@ -1395,9 +1412,13 @@
         if (window.MyHairPermissoes) {
             window.MyHairPermissoes.solicitarNotificacoes();
         }
+        configurarEventosPerfil();
+        carregarPerfil().catch((error) => {
+            console.error('Erro ao atualizar perfil após mudança de autenticação:', error);
+        });
     });
 
-    ['copy', 'cut', 'contextmenu', 'selectstart', 'dragstart'].forEach((evento) => {
+    ['copy', 'cut', 'contextmenu'].forEach((evento) => {
         document.addEventListener(evento, (e) => {
             if (!podeEditarPerfil() && !estaEmModoDesenvolvedor()) {
                 e.preventDefault();

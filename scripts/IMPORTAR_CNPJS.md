@@ -35,6 +35,18 @@ Exemplo sem enriquecimento:
 node scripts/importar_cnpjs.js --input dados\cnpj-jf.csv --output exports\saloes-jf.json
 ```
 
+Exemplo usando JSON no formato da Receita (campos como `ni`, `nomeEmpresarial`, `cnaePrincipal`, `endereco.municipio.descricao`):
+
+```powershell
+node scripts/importar_cnpjs.js --input dados\receita-jf.json --output exports\saloes-jf.json --cidade "Juiz de Fora" --uf MG
+```
+
+Validacao rapida antes de filtrar/importar:
+
+```powershell
+node scripts/validar_receita_json.js --input dados\receita-jf.json
+```
+
 Exemplo com enriquecimento por API:
 
 ```powershell

@@ -1,0 +1,168 @@
+{
+  "cidade": "Juiz de Fora",
+  "uf": "MG",
+  "totalEncontrado": 2,
+  "totalExportado": 2,
+  "geradoEm": "2026-03-14T19:35:08.045Z",
+  "empresas": [
+    {
+      "idSistema": "PJ-1234-0195",
+      "tipoConta": "PJ",
+      "origemImportacao": "base-publica-cnpj",
+      "importadoEm": "2026-03-14T19:35:08.047Z",
+      "documento": "12.345.678/0001-95",
+      "cnpj": "12345678000195",
+      "nome": "Studio Exemplo Beleza LTDA",
+      "fantasia": "Studio Exemplo",
+      "email": "contato@studioexemplo.com",
+      "whats": "32999999999",
+      "servicosOferecidos": [
+        "mao",
+        "pe",
+        "maquiagem",
+        "cabelo"
+      ],
+      "produtosVenda": [],
+      "locaisPrestacao": [
+        "empresa"
+      ],
+      "formasRetirada": [
+        "empresa"
+      ],
+      "cep": "36010000",
+      "rua": "Rua Halfeld",
+      "numero": "100",
+      "complemento": "Sala 201",
+      "bairro": "Centro",
+      "cidade": "Juiz de Fora/MG",
+      "banco": "",
+      "agencia": "",
+      "conta": "",
+      "dataRegistro": "2026-03-14T19:35:08.047Z",
+      "metadataImportacao": {
+        "fonteDocumento": "cnpj-publico",
+        "descricaoSituacao": "",
+        "cnaePrincipal": "9602501",
+        "naturezaJuridica": ""
+      }
+    },
+    {
+      "idSistema": "PJ-9876-0110",
+      "tipoConta": "PJ",
+      "origemImportacao": "base-publica-cnpj",
+      "importadoEm": "2026-03-14T19:35:08.047Z",
+      "documento": "98.765.432/0001-10",
+      "cnpj": "98765432000110",
+      "nome": "Barbearia Teste LTDA",
+      "fantasia": "Barbearia Teste",
+      "email": "contato@barbeariateste.com",
+      "whats": "32988888888",
+      "servicosOferecidos": [
+        "barba",
+        "mao",
+        "pe",
+        "cabelo"
+      ],
+      "produtosVenda": [],
+      "locaisPrestacao": [
+        "empresa"
+      ],
+      "formasRetirada": [
+        "empresa"
+      ],
+      "cep": "36020000",
+      "rua": "Avenida Rio Branco",
+      "numero": "200",
+      "complemento": "",
+      "bairro": "Bom Pastor",
+      "cidade": "Juiz de Fora/MG",
+      "banco": "",
+      "agencia": "",
+      "conta": "",
+      "dataRegistro": "2026-03-14T19:35:08.047Z",
+      "metadataImportacao": {
+        "fonteDocumento": "cnpj-publico",
+        "descricaoSituacao": "",
+        "cnaePrincipal": "9602501",
+        "naturezaJuridica": ""
+      }
+    }
+  ],
+  "bruto": [
+    {
+      "ni": "12345678000195",
+      "nomeEmpresarial": "Studio Exemplo Beleza LTDA",
+      "nomeFantasia": "Studio Exemplo",
+      "cnaePrincipal": {
+        "codigo": "9602501",
+        "descricao": "Cabeleireiros, manicure e pedicure"
+      },
+      "cnaeSecundarias": [
+        {
+          "codigo": "9602502",
+          "descricao": "Atividades de estetica e outros servicos de cuidados com a beleza"
+        }
+      ],
+      "endereco": {
+        "logradouro": "Rua Halfeld",
+        "numero": "100",
+        "complemento": "Sala 201",
+        "cep": "36010000",
+        "bairro": "Centro",
+        "municipio": {
+          "codigo": "3136702",
+          "descricao": "Juiz de Fora"
+        }
+      },
+      "correioEletronico": "contato@studioexemplo.com",
+      "telefone": "999999999",
+      "cnpj": "12345678000195",
+      "razao_social": "Studio Exemplo Beleza LTDA",
+      "nome_fantasia": "Studio Exemplo",
+      "cnae_fiscal_principal": "9602501",
+      "cidade": "Juiz de Fora",
+      "uf": "",
+      "logradouro": "Rua Halfeld",
+      "numero": "100",
+      "complemento": "Sala 201",
+      "bairro": "Centro",
+      "cep": "36010000",
+      "email": "contato@studioexemplo.com",
+      "ddd_telefone_1": "32"
+    },
+    {
+      "ni": "98765432000110",
+      "nomeEmpresarial": "Barbearia Teste LTDA",
+      "nomeFantasia": "Barbearia Teste",
+      "cnaePrincipal": {
+        "codigo": "9602501",
+        "descricao": "Cabeleireiros, manicure e pedicure"
+      },
+      "endereco": {
+        "logradouro": "Avenida Rio Branco",
+        "numero": "200",
+        "cep": "36020000",
+        "bairro": "Bom Pastor",
+        "municipio": {
+          "codigo": "3136702",
+          "descricao": "Juiz de Fora"
+        }
+      },
+      "correioEletronico": "contato@barbeariateste.com",
+      "telefone": "988888888",
+      "cnpj": "98765432000110",
+      "razao_social": "Barbearia Teste LTDA",
+      "nome_fantasia": "Barbearia Teste",
+      "cnae_fiscal_principal": "9602501",
+      "cidade": "Juiz de Fora",
+      "uf": "",
+      "logradouro": "Avenida Rio Branco",
+      "numero": "200",
+      "complemento": "",
+      "bairro": "Bom Pastor",
+      "cep": "36020000",
+      "email": "contato@barbeariateste.com",
+      "ddd_telefone_1": "32"
+    }
+  ]
+}

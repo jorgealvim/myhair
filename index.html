@@ -52,7 +52,7 @@
         <button id="btnPermissoesApp" type="button" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1px solid #b3e5fc; background:#fff; color:#0288d1; font-weight:bold; cursor:pointer;">AUTORIZAR PERMISSÕES</button>
     </div>
 
-        <input type="email" id="email" placeholder="E-mail ou CPF">
+        <input type="email" id="email" placeholder="Seu e-mail">
         <input type="password" id="senha" placeholder="Senha">
 
         <button class="btn-entrar" id="btn-entrar">ENTRAR</button>
@@ -152,6 +152,8 @@
 
     // Login real com Firebase Auth
     document.getElementById('btn-entrar').addEventListener('click', async () => {
+        const botaoEntrar = document.getElementById('btn-entrar');
+        const textoOriginalBotao = botaoEntrar ? botaoEntrar.textContent : 'ENTRAR';
         const email = document.getElementById('email').value.trim();
         const senha = document.getElementById('senha').value;
 
@@ -160,14 +162,28 @@
             return;
         }
 
+        if (botaoEntrar) {
+            botaoEntrar.disabled = true;
+            botaoEntrar.textContent = 'ENTRANDO...';
+        }
+
         try {
             if (window.MyHairPermissoes) {
-                await window.MyHairPermissoes.solicitarPermissoesEssenciais();
+                window.MyHairPermissoes.solicitarPermissoesEssenciais().catch(() => {});
             }
             await auth.signInWithEmailAndPassword(email, senha);
             window.location.href = 'visaogeral.html';
         } catch (err) {
-            alert('Erro no login: ' + (err.code || err.message));
+            if (err && err.code === 'auth/invalid-login-credentials') {
+                alert('Login inválido. Confira o e-mail e a senha, ou crie primeiro a massa de teste demo antes de usar as contas de teste.');
+            } else {
+                alert('Erro no login: ' + (err.code || err.message));
+            }
+        } finally {
+            if (botaoEntrar) {
+                botaoEntrar.disabled = false;
+                botaoEntrar.textContent = textoOriginalBotao;
+            }
         }
     });
 

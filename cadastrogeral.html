@@ -192,6 +192,7 @@
     let idDocFirebase = null;
     let cadastroCarregado = null;
     let edicaoLiberada = false;
+    let carregamentoCadastroEmAndamento = false;
 
     const idGerado = localStorage.getItem('usuarioID') || "MH-NOVO";
     document.getElementById('displayID').innerText = idGerado;
@@ -309,35 +310,44 @@
     }
 
     async function carregarCadastroExistente() {
-        let registro = null;
-        let docId = null;
-
-        const docDireto = await db.collection('usuarios').doc(idGerado).get();
-        if (docDireto.exists) {
-            registro = docDireto.data();
-            docId = docDireto.id;
-        } else {
-            const busca = await db.collection('usuarios').where('idSistema', '==', idGerado).limit(1).get();
-            if (!busca.empty) {
-                const doc = busca.docs[0];
-                registro = doc.data();
-                docId = doc.id;
-            }
-        }
-
-        if (!registro) {
-            cadastroCarregado = null;
-            idDocFirebase = null;
-            edicaoLiberada = true;
-            aplicarPermissoesCadastro();
+        if (carregamentoCadastroEmAndamento) {
             return;
         }
 
-        cadastroCarregado = registro;
-        idDocFirebase = docId;
-        preencherFormulario(registro);
-        edicaoLiberada = false;
-        aplicarPermissoesCadastro();
+        carregamentoCadastroEmAndamento = true;
+        let registro = null;
+        let docId = null;
+
+        try {
+            const docDireto = await db.collection('usuarios').doc(idGerado).get();
+            if (docDireto.exists) {
+                registro = docDireto.data();
+                docId = docDireto.id;
+            } else {
+                const busca = await db.collection('usuarios').where('idSistema', '==', idGerado).limit(1).get();
+                if (!busca.empty) {
+                    const doc = busca.docs[0];
+                    registro = doc.data();
+                    docId = doc.id;
+                }
+            }
+
+            if (!registro) {
+                cadastroCarregado = null;
+                idDocFirebase = null;
+                edicaoLiberada = true;
+                aplicarPermissoesCadastro();
+                return;
+            }
+
+            cadastroCarregado = registro;
+            idDocFirebase = docId;
+            preencherFormulario(registro);
+            edicaoLiberada = false;
+            aplicarPermissoesCadastro();
+        } finally {
+            carregamentoCadastroEmAndamento = false;
+        }
     }
 
     function mudarTipo() {
@@ -496,11 +506,6 @@
             console.error('Erro ao carregar cadastro:', error);
             aplicarPermissoesCadastro();
         });
-    });
-
-    carregarCadastroExistente().catch((error) => {
-        console.error('Erro ao carregar cadastro:', error);
-        aplicarPermissoesCadastro();
     });
 
     if (window.MyHairPermissoes) {

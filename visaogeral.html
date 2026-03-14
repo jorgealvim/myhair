@@ -16,8 +16,9 @@
         .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
         .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
         header { background: white; padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 12px; }
-        .topo-nav { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .topo-nav { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px; }
         .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 8px; padding: 7px 11px; font-size: 10px; font-weight: bold; }
+        .btn-meu-perfil { text-decoration: none; border: 1px solid #cfe7ff; background: #eaf6ff; color: #0d4f7b; border-radius: 8px; padding: 7px 11px; font-size: 10px; font-weight: bold; }
 
         .categorias-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 12px; scrollbar-width: none; }
         .categorias-scroll::-webkit-scrollbar { display: none; } /* Esconde barra no Chrome/Safari */
@@ -32,6 +33,9 @@
         .btn-modo.ativo { background: #eaf6fd; color: var(--dark-blue); }
         .texto-apoio { font-size: 11px; color: #777; text-align: center; margin-top: -2px; }
         .texto-apoio.dev { color: #7a5a00; font-weight: bold; }
+        .painel-contexto { background: #f8fcff; border: 1px solid #ddeaf5; border-radius: 10px; padding: 9px 10px; margin-bottom: 10px; }
+        .painel-contexto strong { display: block; font-size: 11px; color: #234862; }
+        .painel-contexto span { display: block; margin-top: 3px; font-size: 10px; color: #5b7184; }
 
         .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 50px; cursor: pointer; transition: 0.3s; opacity: 0.5; }
         .cat-item.active { opacity: 1; transform: scale(1.1); color: var(--dark-blue); }
@@ -99,11 +103,17 @@
 <div class="page-shell">
     <div class="login-card">
         <div class="topo-nav">
+            <a id="btnMeuPerfil" href="#" class="btn-meu-perfil" style="display:none;">MEU PERFIL</a>
             <a id="btnVoltarVisao" href="index.html" class="btn-voltar">VOLTAR</a>
         </div>
         <header>
             <h1 style="margin:0; font-size: 20px;">MY HAIR</h1>
         </header>
+
+        <div id="painelContextoSessao" class="painel-contexto" style="display:none;">
+            <strong id="contextoSessaoTitulo">Sessão atual</strong>
+            <span id="contextoSessaoTexto">Carregando contexto...</span>
+        </div>
 
         <div class="filtros-box">
             <input type="search" id="campoBusca" class="campo-busca" placeholder="Buscar por nome, bairro ou serviço">
@@ -210,6 +220,8 @@
     let unsubscribeSolicitacoesPrestador = null;
     let solicitacoesPrestadorNotificadas = new Set();
     let snapshotPrestadorInicializado = false;
+    let eventosTelaConfigurados = false;
+    let carregamentoProfissionaisEmAndamento = false;
 
     const ICONES_SERVICO = {
         cabelo: { icon: '💇‍♂️', label: 'Cabelo' },
@@ -261,6 +273,43 @@
 
         textoModo.classList.remove('dev');
         textoModo.textContent = 'Favoritos valem para ambos: cliente e salão.';
+    }
+
+    function atualizarPainelContextoSessao() {
+        const painel = document.getElementById('painelContextoSessao');
+        const titulo = document.getElementById('contextoSessaoTitulo');
+        const texto = document.getElementById('contextoSessaoTexto');
+        if (!painel || !titulo || !texto) {
+            return;
+        }
+
+        const usuarioAuth = auth.currentUser;
+        const loginExibicao = usuarioAuth?.email || localStorage.getItem('usuarioID') || 'visitante';
+        const tipoConta = tipoAtual === 'salao' ? 'salão' : 'cliente';
+        const modoExibicao = modoVisualizacao === 'salao' ? 'vendo salões' : 'vendo clientes';
+
+        painel.style.display = 'block';
+        titulo.textContent = `Sessão atual: ${loginExibicao}`;
+        texto.textContent = `Conta: ${tipoConta} | Tela: ${modoExibicao}`;
+    }
+
+    function atualizarBotaoMeuPerfil() {
+        const botao = document.getElementById('btnMeuPerfil');
+        if (!botao) {
+            return;
+        }
+
+        const usuarioAnonimo = !identificadorAtual || identificadorAtual.startsWith('anonimo_') || identificadorAtual === 'anonimo';
+        if (usuarioAnonimo) {
+            botao.style.display = 'none';
+            botao.href = '#';
+            return;
+        }
+
+        const tipoPerfil = tipoAtual === 'salao' ? 'salao' : 'cliente';
+        const sufixoModoDev = getSufixoModoDev();
+        botao.href = `perfil.html?id=${encodeURIComponent(identificadorAtual)}&tipo=${tipoPerfil}${sufixoModoDev}`;
+        botao.style.display = 'inline-block';
     }
 
     function abrirPerfilPrestador() {
@@ -831,6 +880,8 @@
                 primeiro.classList.add('active');
             }
         }
+        atualizarPainelContextoSessao();
+        atualizarBotaoMeuPerfil();
     }
 
     function aplicarFiltros() {
@@ -878,6 +929,11 @@
     }
 
     async function carregarProfissionais() {
+        if (carregamentoProfissionaisEmAndamento) {
+            return;
+        }
+
+        carregamentoProfissionaisEmAndamento = true;
         const lista = document.getElementById('listaProfissionais');
         try {
             const perfil = await resolverPerfilAtual();
@@ -885,6 +941,8 @@
             tipoAtual = perfil.tipo;
             localStorage.setItem('usuarioID', identificadorAtual);
             localStorage.setItem('myhair_tipo_usuario', tipoAtual);
+            atualizarPainelContextoSessao();
+            atualizarBotaoMeuPerfil();
 
             const [saloesSnap, clientesSnap] = await Promise.all([
                 db.collection('usuarios').get(),
@@ -948,6 +1006,8 @@
         } catch (e) {
             console.error(e);
             lista.innerHTML = "<p style='text-align:center;'>Erro ao carregar dados. Verifique o console.</p>";
+        } finally {
+            carregamentoProfissionaisEmAndamento = false;
         }
     }
 
@@ -1051,59 +1111,68 @@
         aplicarFiltros();
     }
 
-    document.getElementById('campoBusca').addEventListener('input', aplicarFiltros);
-    document.getElementById('btnTodos').addEventListener('click', function() {
-        somenteFavoritos = false;
-        document.getElementById('btnTodos').classList.add('ativo');
-        document.getElementById('btnFavoritos').classList.remove('ativo');
-        aplicarFiltros();
-    });
-    document.getElementById('btnFavoritos').addEventListener('click', function() {
-        somenteFavoritos = true;
-        document.getElementById('btnFavoritos').classList.add('ativo');
-        document.getElementById('btnTodos').classList.remove('ativo');
-        aplicarFiltros();
-    });
-    document.getElementById('btnAbertos').addEventListener('click', function() {
-        somenteAbertos = !somenteAbertos;
-        document.getElementById('btnAbertos').classList.toggle('ativo', somenteAbertos);
-        aplicarFiltros();
-    });
-    document.getElementById('btnVerSaloes').addEventListener('click', function() {
-        modoVisualizacao = 'salao';
-        atualizarModoVisualizacao();
-        document.getElementById('btnAbertos').disabled = false;
-        aplicarFiltros();
-    });
-    document.getElementById('btnVerClientes').addEventListener('click', function() {
-        modoVisualizacao = 'cliente';
-        atualizarModoVisualizacao();
-        somenteAbertos = false;
-        document.getElementById('btnAbertos').classList.remove('ativo');
-        document.getElementById('btnAbertos').disabled = true;
-        aplicarFiltros();
-    });
+    function configurarEventosTela() {
+        if (eventosTelaConfigurados) {
+            return;
+        }
+
+        eventosTelaConfigurados = true;
+
+        document.getElementById('campoBusca').addEventListener('input', aplicarFiltros);
+        document.getElementById('btnTodos').addEventListener('click', function() {
+            somenteFavoritos = false;
+            document.getElementById('btnTodos').classList.add('ativo');
+            document.getElementById('btnFavoritos').classList.remove('ativo');
+            aplicarFiltros();
+        });
+        document.getElementById('btnFavoritos').addEventListener('click', function() {
+            somenteFavoritos = true;
+            document.getElementById('btnFavoritos').classList.add('ativo');
+            document.getElementById('btnTodos').classList.remove('ativo');
+            aplicarFiltros();
+        });
+        document.getElementById('btnAbertos').addEventListener('click', function() {
+            somenteAbertos = !somenteAbertos;
+            document.getElementById('btnAbertos').classList.toggle('ativo', somenteAbertos);
+            aplicarFiltros();
+        });
+        document.getElementById('btnVerSaloes').addEventListener('click', function() {
+            modoVisualizacao = 'salao';
+            atualizarModoVisualizacao();
+            document.getElementById('btnAbertos').disabled = false;
+            aplicarFiltros();
+        });
+        document.getElementById('btnVerClientes').addEventListener('click', function() {
+            modoVisualizacao = 'cliente';
+            atualizarModoVisualizacao();
+            somenteAbertos = false;
+            document.getElementById('btnAbertos').classList.remove('ativo');
+            document.getElementById('btnAbertos').disabled = true;
+            aplicarFiltros();
+        });
+
+        document.getElementById('modalCartao').addEventListener('click', function(evento) {
+            if (evento.target.id === 'modalCartao') {
+                fecharCartaoVisitas();
+            }
+        });
+    }
 
     auth.onAuthStateChanged(async () => {
         atualizarIdentificadorAtual();
         atualizarIndicadorModoDev();
         aplicarProtecaoConteudo();
+        configurarEventosTela();
         if (window.MyHairPermissoes) {
             window.MyHairPermissoes.solicitarNotificacoes();
         }
         await carregarProfissionais();
     });
 
-    document.getElementById('modalCartao').addEventListener('click', function(evento) {
-        if (evento.target.id === 'modalCartao') {
-            fecharCartaoVisitas();
-        }
-    });
-
     window.onload = () => {
+        configurarEventosTela();
         atualizarIndicadorModoDev();
         aplicarProtecaoConteudo();
-        carregarProfissionais();
     };
 
     ['copy', 'cut', 'contextmenu', 'selectstart', 'dragstart'].forEach((evento) => {

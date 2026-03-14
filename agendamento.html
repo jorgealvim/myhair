@@ -211,6 +211,8 @@
     let carrinho = [];
     let distanciaCalculadaViaMaps = false;
     let carregamentoGoogleMaps = null;
+    let eventosPaginaConfigurados = false;
+    let inicializacaoPaginaEmAndamento = false;
     const TAXA_DESLOCAMENTO_POR_KM_TRECHO = 2;
 
     function sanitizarId(valor) {
@@ -267,6 +269,10 @@
         return String(keyParam || keyLocal || keyGlobal || '').trim();
     }
 
+    function temGoogleMapsConfigurado() {
+        return Boolean(obterGoogleMapsApiKey());
+    }
+
     function atualizarStatusMaps(texto, erro = false) {
         const status = document.getElementById('statusMaps');
         if (!status) {
@@ -302,15 +308,6 @@
         });
 
         await carregamentoGoogleMaps;
-    }
-
-    function gerarHorariosPadrao() {
-        const horarios = [];
-        for (let h = 8; h <= 19; h += 1) {
-            horarios.push(`${String(h).padStart(2, '0')}:00`);
-            horarios.push(`${String(h).padStart(2, '0')}:30`);
-        }
-        return horarios;
     }
 
     function horaValida(hora) {
@@ -407,6 +404,10 @@
             tempo: servico.tempo,
             quantidade,
         });
+        const campo = document.getElementById(`qtdServico_${index}`);
+        if (campo) {
+            campo.value = '';
+        }
         renderizarCarrinho();
     }
 
@@ -435,11 +436,32 @@
                     <td>${servico.nome}</td>
                     <td>${formatarMoeda(servico.preco)}</td>
                     <td>${servico.tempo}</td>
-                    <td><input class="qtd-servico" type="number" id="qtdServico_${index}" min="1" step="1" value="1"></td>
+                    <td><input class="qtd-servico" type="number" id="qtdServico_${index}" min="1" step="1" placeholder="1"></td>
                     <td><button class="btn-add" type="button" onclick="adicionarServicoCarrinho(${index})">ADICIONAR</button></td>
                 </tr>
             `;
         });
+    }
+
+    function obterProximaDataComHorarios() {
+        const agenda = prestadorAtual?.agenda;
+        if (!agenda || typeof agenda !== 'object') {
+            return '';
+        }
+
+        const hoje = hojeISO();
+        const datas = Object.keys(agenda)
+            .filter((data) => data >= hoje)
+            .sort();
+
+        for (const data of datas) {
+            const horarios = obterHorariosDisponiveisDia(agenda[data]);
+            if (horarios.length) {
+                return data;
+            }
+        }
+
+        return datas[0] || '';
     }
 
     function obterDistanciaKm() {
@@ -474,7 +496,21 @@
         }
         const local = obterLocalPrestacaoSelecionado();
         const habilitado = local === 'domicilio';
-        campo.disabled = true;
+        const googleMapsConfigurado = temGoogleMapsConfigurado();
+        campo.readOnly = googleMapsConfigurado;
+        campo.disabled = !habilitado;
+
+        if (!habilitado) {
+            campo.setAttribute('disabled', 'disabled');
+            campo.setAttribute('readonly', 'readonly');
+        } else if (googleMapsConfigurado) {
+            campo.removeAttribute('disabled');
+            campo.setAttribute('readonly', 'readonly');
+        } else {
+            campo.removeAttribute('disabled');
+            campo.removeAttribute('readonly');
+        }
+
         if (campoOrigem) {
             campoOrigem.disabled = !habilitado;
         }
@@ -482,13 +518,17 @@
             campoDestino.disabled = !habilitado;
         }
         if (botaoMaps) {
-            botaoMaps.disabled = !habilitado;
+            botaoMaps.disabled = !habilitado || !googleMapsConfigurado;
+            botaoMaps.style.opacity = (!habilitado || !googleMapsConfigurado) ? '0.65' : '1';
         }
 
         if (!habilitado) {
             campo.value = '0';
             distanciaCalculadaViaMaps = false;
             atualizarStatusMaps('Para serviço na empresa não há cobrança de deslocamento.');
+        } else if (!googleMapsConfigurado) {
+            distanciaCalculadaViaMaps = false;
+            atualizarStatusMaps('Google Maps não configurado. Informe a distância manualmente em km para continuar.');
         } else if (!distanciaCalculadaViaMaps) {
             atualizarStatusMaps('Clique em CALCULAR DISTÂNCIA (GOOGLE MAPS) para obter a distância de ida.');
         }
@@ -955,6 +995,16 @@
         preencherEnderecosDeslocamento();
         atualizarLocaisPrestacaoUI();
         renderizarTabelaServicos();
+
+        const campoData = document.getElementById('dataAgendamento');
+        const proximaData = obterProximaDataComHorarios();
+        if (campoData && proximaData) {
+            campoData.value = proximaData;
+            const textoData = document.getElementById('textoData');
+            if (textoData) {
+                textoData.textContent = `Próxima data com horários liberados: ${proximaData}.`;
+            }
+        }
     }
 
     function listarHorariosDisponiveis() {
@@ -975,13 +1025,9 @@
 
         if (!horarios.length) {
             const semAgendaNoDia = !agendaDia || (typeof agendaDia === 'object' && !Array.isArray(agendaDia) && Object.keys(agendaDia).length === 0);
-            if (semAgendaNoDia) {
-                gerarHorariosPadrao().forEach((hora) => horarios.push(hora));
-            }
-        }
-
-        if (!horarios.length) {
-            status.textContent = 'Não há horários disponíveis nessa data.';
+            status.textContent = semAgendaNoDia
+                ? 'Este prestador ainda não liberou horários nessa data.'
+                : 'Não há horários disponíveis nessa data.';
             return;
         }
 
@@ -1040,7 +1086,7 @@
             return;
         }
 
-        if (localPrestacao === 'domicilio' && !distanciaCalculadaViaMaps) {
+        if (localPrestacao === 'domicilio' && temGoogleMapsConfigurado() && !distanciaCalculadaViaMaps) {
             alert('Calcule a distância no Google Maps antes de solicitar agendamento a domicílio.');
             return;
         }
@@ -1072,7 +1118,9 @@
             subtotalServicos,
             taxaDeslocamento,
             distanciaKm,
-            distanciaFonte: localPrestacao === 'domicilio' ? 'google_maps' : 'nao_aplicavel',
+            distanciaFonte: localPrestacao === 'domicilio'
+                ? (temGoogleMapsConfigurado() ? 'google_maps' : 'manual')
+                : 'nao_aplicavel',
             valorTotal,
             data,
             hora: horaSelecionada,
@@ -1090,10 +1138,15 @@
             taxaDeslocamento,
             valorTotal,
         });
-        alert('Serviço agendado com sucesso.');
+        alert('Solicitação enviada com sucesso.');
     }
 
-    async function iniciarPagina() {
+    function configurarEventosPagina() {
+        if (eventosPaginaConfigurados) {
+            return;
+        }
+        eventosPaginaConfigurados = true;
+
         document.getElementById('dataAgendamento').value = hojeISO();
         document.getElementById('dataAgendamento').addEventListener('change', listarHorariosDisponiveis);
         document.getElementById('btnConfirmar').addEventListener('click', solicitarAgendamento);
@@ -1101,30 +1154,55 @@
         document.getElementById('origemDeslocamento').addEventListener('input', () => {
             distanciaCalculadaViaMaps = false;
             document.getElementById('distanciaKm').value = '0';
-            atualizarStatusMaps('Endereço alterado. Recalcule a distância no Google Maps.');
+            atualizarStatusMaps(temGoogleMapsConfigurado()
+                ? 'Endereço alterado. Recalcule a distância no Google Maps.'
+                : 'Endereço alterado. Informe a distância manualmente em km.');
             renderizarCarrinho();
         });
         document.getElementById('destinoDeslocamento').addEventListener('input', () => {
             distanciaCalculadaViaMaps = false;
             document.getElementById('distanciaKm').value = '0';
-            atualizarStatusMaps('Endereço alterado. Recalcule a distância no Google Maps.');
+            atualizarStatusMaps(temGoogleMapsConfigurado()
+                ? 'Endereço alterado. Recalcule a distância no Google Maps.'
+                : 'Endereço alterado. Informe a distância manualmente em km.');
             renderizarCarrinho();
+        });
+        document.getElementById('distanciaKm').addEventListener('input', () => {
+            if (!temGoogleMapsConfigurado()) {
+                renderizarCarrinho();
+            }
         });
         configurarExclusividadeLocais();
         atualizarEstadoCampoDistancia();
         renderizarCarrinho();
+    }
 
-        await identificarClienteAtual();
-        atualizarIndicadorModoDev();
-        await carregarPrestador();
-        listarHorariosDisponiveis();
-        await carregarSolicitacaoRecente();
+    async function iniciarPagina() {
+        if (inicializacaoPaginaEmAndamento) {
+            return;
+        }
+
+        inicializacaoPaginaEmAndamento = true;
+
+        try {
+            configurarEventosPagina();
+            document.getElementById('dataAgendamento').value = hojeISO();
+
+            await identificarClienteAtual();
+            atualizarIndicadorModoDev();
+            await carregarPrestador();
+            listarHorariosDisponiveis();
+            await carregarSolicitacaoRecente();
+        } finally {
+            inicializacaoPaginaEmAndamento = false;
+        }
     }
 
     auth.onAuthStateChanged(() => {
         if (window.MyHairPermissoes) {
             window.MyHairPermissoes.solicitarNotificacoes();
         }
+        configurarEventosPagina();
         iniciarPagina().catch((error) => {
             console.error(error);
             alert('Erro ao carregar a tela de agendamento.');
@@ -1132,6 +1210,7 @@
     });
 
     window.onload = () => {
+        configurarEventosPagina();
         atualizarIndicadorModoDev();
         if (!prestadorId) {
             document.getElementById('statusHorario').textContent = 'Volte e escolha um prestador para agendar.';

@@ -1,0 +1,61 @@
+[
+  {
+    "ni": "12345678000195",
+    "nomeEmpresarial": "Studio Exemplo Beleza LTDA",
+    "nomeFantasia": "Studio Exemplo",
+    "cnaePrincipal": {
+      "codigo": "9602501",
+      "descricao": "Cabeleireiros, manicure e pedicure"
+    },
+    "cnaeSecundarias": [
+      {
+        "codigo": "9602502",
+        "descricao": "Atividades de estetica e outros servicos de cuidados com a beleza"
+      }
+    ],
+    "endereco": {
+      "logradouro": "Rua Halfeld",
+      "numero": "100",
+      "complemento": "Sala 201",
+      "cep": "36010000",
+      "bairro": "Centro",
+      "municipio": {
+        "codigo": "3136702",
+        "descricao": "Juiz de Fora"
+      }
+    },
+    "correioEletronico": "contato@studioexemplo.com",
+    "telefone": [
+      {
+        "ddd": "32",
+        "numero": "999999999"
+      }
+    ]
+  },
+  {
+    "ni": "98765432000110",
+    "nomeEmpresarial": "Barbearia Teste LTDA",
+    "nomeFantasia": "Barbearia Teste",
+    "cnaePrincipal": {
+      "codigo": "9602501",
+      "descricao": "Cabeleireiros, manicure e pedicure"
+    },
+    "endereco": {
+      "logradouro": "Avenida Rio Branco",
+      "numero": "200",
+      "cep": "36020000",
+      "bairro": "Bom Pastor",
+      "municipio": {
+        "codigo": "3136702",
+        "descricao": "Juiz de Fora"
+      }
+    },
+    "correioEletronico": "contato@barbeariateste.com",
+    "telefone": [
+      {
+        "ddd": "32",
+        "numero": "988888888"
+      }
+    ]
+  }
+]

@@ -1,0 +1,11 @@
+{
+  "name": "myhair",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "popular:teste": "node scripts/popular_massa_teste.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.4.0"
+  }
+}

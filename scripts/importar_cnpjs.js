@@ -182,19 +182,106 @@ function loadRows(inputPath) {
   return parseCsv(content);
 }
 
+function getNestedValue(source, pathKey) {
+  if (!source || typeof source !== 'object' || !pathKey) {
+    return undefined;
+  }
+
+  const segments = String(pathKey).split('.').filter(Boolean);
+  let current = source;
+
+  for (const segment of segments) {
+    if (!current || typeof current !== 'object') {
+      return undefined;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(current, segment)) {
+      current = current[segment];
+      continue;
+    }
+
+    const matchKey = Object.keys(current).find((key) => normalizeText(key) === normalizeText(segment));
+    if (!matchKey) {
+      return undefined;
+    }
+    current = current[matchKey];
+  }
+
+  return current;
+}
+
 function pickFirst(row, keys) {
   for (const key of keys) {
-    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-      return row[key];
+    const value = getNestedValue(row, key);
+    if (value === undefined || value === null) {
+      continue;
     }
+    if (typeof value === 'string' && value.trim() === '') {
+      continue;
+    }
+    if (Array.isArray(value) && value.length === 0) {
+      continue;
+    }
+    if (typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length === 0) {
+      continue;
+    }
+
+    return value;
   }
 
   return '';
 }
 
+function extractPhoneParts(row) {
+  const ddd = digitsOnly(pickFirst(row, [
+    'ddd_telefone_1',
+    'telefone.ddd',
+    'telefone[0].ddd',
+  ]));
+
+  const telefoneLista = pickFirst(row, ['telefone']);
+  if (Array.isArray(telefoneLista) && telefoneLista.length) {
+    const primeiro = telefoneLista[0] || {};
+    const dddLista = digitsOnly(primeiro.ddd || '');
+    const numeroLista = digitsOnly(primeiro.numero || '');
+    return {
+      ddd: ddd || dddLista,
+      numero: numeroLista,
+    };
+  }
+
+  const numero = digitsOnly(pickFirst(row, [
+    'telefone',
+    'whatsapp',
+    'telefone1',
+    'ddd_telefone_1',
+    'endereco.telefone',
+  ]));
+
+  return { ddd, numero };
+}
+
+function parseCidadeUf(value) {
+  const texto = String(value || '').trim();
+  if (!texto) {
+    return { cidade: '', uf: '' };
+  }
+
+  if (texto.includes('/')) {
+    const partes = texto.split('/').map((item) => item.trim()).filter(Boolean);
+    return {
+      cidade: partes[0] || '',
+      uf: (partes[1] || '').toUpperCase(),
+    };
+  }
+
+  return { cidade: texto, uf: '' };
+}
+
 function extractCnpj(row) {
   const direct = pickFirst(row, [
     'cnpj',
+    'ni',
     'cnpj_completo',
     'numero_inscricao',
     'estabelecimento_cnpj',
@@ -217,7 +304,9 @@ function extractCnpj(row) {
 }
 
 function extractCity(row) {
-  return pickFirst(row, [
+  const fromAddress = pickFirst(row, [
+    'endereco.municipio.descricao',
+    'municipio.descricao',
     'municipio',
     'cidade',
     'descricao_municipio',
@@ -225,14 +314,29 @@ function extractCity(row) {
     'estabelecimento_municipio',
     'estabelecimento_cidade_exterior',
   ]);
+
+  const parsed = parseCidadeUf(fromAddress);
+  if (parsed.cidade) {
+    return parsed.cidade;
+  }
+
+  const jurisdicao = pickFirst(row, ['municipioJurisdicao.descricao']);
+  return parseCidadeUf(jurisdicao).cidade;
 }
 
 function extractUf(row) {
-  return pickFirst(row, ['uf', 'estado', 'sigla_uf', 'estabelecimento_uf']);
+  const ufDireta = pickFirst(row, ['uf', 'estado', 'sigla_uf', 'estabelecimento_uf']);
+  if (String(ufDireta || '').trim()) {
+    return ufDireta;
+  }
+
+  const cidadeUf = parseCidadeUf(pickFirst(row, ['cidade', 'municipioJurisdicao.descricao', 'endereco.municipio.descricao']));
+  return cidadeUf.uf;
 }
 
 function extractName(row) {
   return pickFirst(row, [
+    'nomeEmpresarial',
     'razao_social',
     'nome_empresarial',
     'nome',
@@ -241,6 +345,7 @@ function extractName(row) {
 
 function extractFantasy(row) {
   return pickFirst(row, [
+    'nomeFantasia',
     'nome_fantasia',
     'fantasia',
     'estabelecimento_nomefantasia',
@@ -248,7 +353,14 @@ function extractFantasy(row) {
 }
 
 function extractCnaes(row) {
+  const principalReceita = digitsOnly(pickFirst(row, ['cnaePrincipal.codigo']));
+  const secundariasReceita = pickFirst(row, ['cnaeSecundarias']);
+  const secundariasReceitaCodigos = Array.isArray(secundariasReceita)
+    ? secundariasReceita.map((item) => digitsOnly(item?.codigo || '')).filter(Boolean)
+    : [];
+
   const principal = digitsOnly(pickFirst(row, [
+    'cnaePrincipal.codigo',
     'cnae_fiscal_principal',
     'codigo_cnae_principal',
     'cnae_principal',
@@ -268,7 +380,7 @@ function extractCnaes(row) {
     .map((value) => digitsOnly(value))
     .filter(Boolean);
 
-  return [principal, ...secundarias].filter(Boolean);
+  return [principalReceita, principal, ...secundariasReceitaCodigos, ...secundarias].filter(Boolean);
 }
 
 function isBeautyBusiness(row, city, uf) {
@@ -277,7 +389,11 @@ function isBeautyBusiness(row, city, uf) {
   const normalizedCity = normalizeText(city);
   const normalizedUf = normalizeText(uf);
 
-  if (rowCity !== normalizedCity || rowUf !== normalizedUf) {
+  if (rowCity !== normalizedCity) {
+    return false;
+  }
+
+  if (normalizedUf && rowUf && rowUf !== normalizedUf) {
     return false;
   }
 
@@ -360,14 +476,15 @@ async function enrichCompany(entry) {
 }
 
 function mapToMyHair(entry, city, uf) {
-  const ddd = digitsOnly(entry.ddd_telefone_1 || entry.ddd || '');
-  const telefoneBase = digitsOnly(entry.telefone || entry.whatsapp || entry.telefone1 || entry.ddd_telefone_1 || '');
+  const telefones = extractPhoneParts(entry);
+  const ddd = digitsOnly(entry.ddd_telefone_1 || entry.ddd || telefones.ddd || '');
+  const telefoneBase = digitsOnly(entry.telefone || entry.whatsapp || entry.telefone1 || entry.ddd_telefone_1 || telefones.numero || '');
   const telefone = telefoneBase.startsWith(ddd) || !ddd ? telefoneBase : `${ddd}${telefoneBase}`;
-  const fantasia = entry.nome_fantasia || entry.fantasia || entry.razao_social || entry.nome || '';
-  const razao = entry.razao_social || entry.nome || fantasia;
+  const fantasia = entry.nome_fantasia || entry.nomeFantasia || entry.fantasia || entry.razao_social || entry.nomeEmpresarial || entry.nome || '';
+  const razao = entry.razao_social || entry.nomeEmpresarial || entry.nome || fantasia;
   const cnpj = digitsOnly(entry.cnpj);
-  const rua = entry.logradouro || entry.rua || '';
-  const numero = entry.numero || '';
+  const rua = entry.logradouro || entry.endereco?.logradouro || entry.rua || '';
+  const numero = entry.numero || entry.endereco?.numero || '';
 
   return {
     idSistema: buildSystemId(cnpj),
@@ -378,17 +495,17 @@ function mapToMyHair(entry, city, uf) {
     cnpj,
     nome: razao,
     fantasia: fantasia,
-    email: entry.email || '',
+    email: entry.email || entry.correioEletronico || '',
     whats: telefone,
     servicosOferecidos: inferServices(entry),
     produtosVenda: [],
     locaisPrestacao: ['empresa'],
     formasRetirada: ['empresa'],
-    cep: digitsOnly(entry.cep || ''),
+    cep: digitsOnly(entry.cep || entry.endereco?.cep || ''),
     rua,
     numero,
-    complemento: entry.complemento || '',
-    bairro: entry.bairro || '',
+    complemento: entry.complemento || entry.endereco?.complemento || '',
+    bairro: entry.bairro || entry.endereco?.bairro || '',
     cidade: `${city}/${uf}`,
     banco: '',
     agencia: '',
@@ -425,13 +542,14 @@ async function main() {
       cnae_fiscal_principal: extractCnaes(row)[0] || '',
       cidade: extractCity(row),
       uf: extractUf(row),
-      logradouro: pickFirst(row, ['logradouro', 'estabelecimento_tipo_logradouro']),
-      numero: pickFirst(row, ['numero', 'estabelecimento_numero']),
-      complemento: pickFirst(row, ['complemento', 'estabelecimento_complemento']),
-      bairro: pickFirst(row, ['bairro', 'estabelecimento_bairro']),
-      cep: pickFirst(row, ['cep', 'estabelecimento_cep']),
-      email: pickFirst(row, ['email', 'correio_eletronico', 'estabelecimento_correio_eletronico']),
-      ddd_telefone_1: pickFirst(row, ['ddd_telefone_1', 'telefone1', 'estabelecimento_ddd1']),
+      logradouro: pickFirst(row, ['logradouro', 'endereco.logradouro', 'estabelecimento_tipo_logradouro']),
+      numero: pickFirst(row, ['numero', 'endereco.numero', 'estabelecimento_numero']),
+      complemento: pickFirst(row, ['complemento', 'endereco.complemento', 'estabelecimento_complemento']),
+      bairro: pickFirst(row, ['bairro', 'endereco.bairro', 'estabelecimento_bairro']),
+      cep: pickFirst(row, ['cep', 'endereco.cep', 'estabelecimento_cep']),
+      email: pickFirst(row, ['email', 'correioEletronico', 'correio_eletronico', 'estabelecimento_correio_eletronico']),
+      ddd_telefone_1: extractPhoneParts(row).ddd || pickFirst(row, ['ddd_telefone_1', 'telefone1', 'estabelecimento_ddd1']),
+      telefone: extractPhoneParts(row).numero || pickFirst(row, ['telefone', 'telefone1']),
     }))
     .filter((row) => row.cnpj.length === 14);
 
