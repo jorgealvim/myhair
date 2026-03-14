@@ -37,41 +37,81 @@
 </head>
 <body>
 
-<div class="login-card">
-    <h1>MY HAIR</h1>
-    <div class="subtitle">Gestão para Profissionais de Beleza</div>
 
-    <input type="email" id="email" placeholder="E-mail ou CPF">
-    <input type="password" id="senha" placeholder="Senha">
+<div class="login-card" style="margin-bottom: 24px;">
+        <h1>MY HAIR</h1>
+        <div class="subtitle">Gestão para Profissionais de Beleza</div>
 
-    <button class="btn-entrar" id="btn-entrar">ENTRAR</button>
+        <input type="email" id="email" placeholder="E-mail ou CPF">
+        <input type="password" id="senha" placeholder="Senha">
 
-    <div class="links-aux">
-        <a href="esqueci_senha.html">Esqueci minha senha</a>
-        
-        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
-        
-        <p>Ainda não tem conta?</p>
-        <a href="#" class="btn-cadastro btn-parceiro" onclick="gerarIdEIrParaCadastro()">CADASTRAR COMO PARCEIRO</a>
-        
-        <a href="cadastrocliente.html" class="btn-cadastro btn-usuario">CADASTRAR COMO USUÁRIO</a>
-    </div>
+        <button class="btn-entrar" id="btn-entrar">ENTRAR</button>
+
+        <div class="links-aux">
+                <a href="esqueci_senha.html">Esqueci minha senha</a>
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+                <p>Ainda não tem conta?</p>
+                <a href="#" class="btn-cadastro btn-parceiro" onclick="gerarIdEIrParaCadastro()">CADASTRAR COMO PARCEIRO</a>
+                <a href="cadastrocliente.html" class="btn-cadastro btn-usuario">CADASTRAR COMO USUÁRIO</a>
+        </div>
 </div>
 
-<div class="objetivos-container">
-    <h2>Nossos Objetivos</h2>
-    <div class="objetivo-item">
-        <b>Visibilidade:</b> Conectamos você a novos clientes na sua região de forma automática.
+<div style="display: flex; flex-direction: row; justify-content: center; align-items: flex-start; gap: 20px; margin-top: 10px;">
+
+<div style="display: flex; flex-direction: column; align-items: center; margin-top: 10px;">
+    <div style="display: flex; flex-direction: row; gap: 10px; margin-bottom: 10px;">
+        <button id="btnObjetivos" style="width:160px; padding:12px; border-radius:8px; background:#b3e5fc; color:#0288d1; border:none; font-weight:bold; cursor:pointer;">Nossos Objetivos</button>
+        <button id="btnTermos" style="width:160px; padding:12px; border-radius:8px; background:#0288d1; color:#fff; border:none; font-weight:bold; cursor:pointer;">Termos e Condições</button>
     </div>
-    <div class="objetivo-item">
-        <b>Agilidade:</b> Gestão completa de horários e preços em uma única tela.
-    </div>
-    <div class="objetivo-item">
-        <b>Segurança Financeira:</b> Garantia de recebimento de 85% do valor via repasses seguros.
+    <div style="width:100%; max-width:350px;">
+        <div id="painelTermos" class="termos-card" style="background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); margin-bottom:10px; display:none;">
+            <h3 style="color:#0288d1;">Termos e Condições</h3>
+            <p style="font-size:13px; text-align:left; color:#444; max-height:120px; overflow:auto;">
+                O aplicativo MyHair tem o objetivo de unir prestadores de serviços, empresas e autônomos aos usuários. Utilizando-se de geolocalização, mostra sempre o salão mais próximo ou o preferido.<br><br>
+                O cliente poderá agendar serviços ou comprar produtos dos parceiros. Será cobrada uma taxa dos parceiros e dos clientes, descontada em forma de indenização pela utilização do app.<br><br>
+                Todo profissional da área de estética ou que tenha necessidade de agendamento para prestar serviços por hora ou vender produtos poderá se filiar. É vedado o uso para fins ilícitos, conforme previsto no CPP e LGPD.<br><br>
+                O pagamento poderá ser realizado por cartão de débito, crédito, Pix ou dinheiro.<br><br>
+                O app terá programa de milhagens por fidelização ao parceiro favorito.<br><br>
+                Cada parte pagará seus impostos.
+            </p>
+            <button id="downloadTermo" style="margin-top:10px; padding:8px 16px; border-radius:8px; background:#b3e5fc; border:none; font-weight:bold; cursor:pointer;">Baixar termo.pdf</button>
+            <input type="checkbox" id="aceiteTermos" style="margin-top:10px;"> <label for="aceiteTermos" style="font-size:13px;">Li e aceito os termos e condições</label>
+        </div>
+        <div id="painelObjetivos" class="objetivos-container" style="background:#fff; padding:16px; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.05); display:none;">
+            <h2 style="color:#0288d1;">Nossos Objetivos</h2>
+            <div class="objetivo-item">
+                <b>Visibilidade:</b> Conectamos você a novos clientes na sua região de forma automática.
+            </div>
+            <div class="objetivo-item">
+                <b>Agilidade:</b> Gestão completa de horários e preços em uma única tela.
+            </div>
+            <div class="objetivo-item">
+                <b>Segurança Financeira:</b> Garantia de recebimento de 85% do valor via repasses seguros.
+            </div>
+        </div>
     </div>
 </div>
 
 <script>
+        // Accordion dos painéis
+        document.getElementById('btnTermos').addEventListener('click', function() {
+            document.getElementById('painelTermos').style.display = 'block';
+            document.getElementById('painelObjetivos').style.display = 'none';
+        });
+        document.getElementById('btnObjetivos').addEventListener('click', function() {
+            document.getElementById('painelTermos').style.display = 'none';
+            document.getElementById('painelObjetivos').style.display = 'block';
+        });
+
+        // Download termo.pdf
+        document.getElementById('downloadTermo').addEventListener('click', function() {
+            const link = document.createElement('a');
+            link.href = 'termos/termo.pdf';
+            link.download = 'termo.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
     // Função para gerar o ID e encaminhar para cadastrogeral.html
     function gerarID() {
         const ano = new Date().getFullYear();
@@ -100,6 +140,34 @@
     // Botão Entrar encaminha para a Visão Geral
     document.getElementById('btn-entrar').addEventListener('click', () => {
         window.location.href = "visaogeral.html";
+    });
+
+
+    document.getElementById('downloadTermo').addEventListener('click', function() {
+        const link = document.createElement('a');
+        link.href = 'termos/termo.pdf';
+        link.download = 'termo.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+
+    document.getElementById('aceiteTermos').addEventListener('change', function() {
+        const btnCheckbox = document.getElementById('downloadTermoCheckbox');
+        if(this.checked) {
+            btnCheckbox.style.display = 'inline-block';
+        } else {
+            btnCheckbox.style.display = 'none';
+        }
+    });
+
+    document.getElementById('downloadTermoCheckbox').addEventListener('click', function() {
+        const link = document.createElement('a');
+        link.href = 'termos/termo.pdf';
+        link.download = 'termo.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     });
 </script>
 

@@ -1,0 +1,13 @@
+TERMO DE USO - MY HAIR
+
+O aplicativo MyHair tem o objetivo de unir prestadores de serviços, empresas e autônomos aos usuários. Utilizando-se de geolocalização, mostra sempre o salão mais próximo ou o preferido.
+
+O cliente poderá agendar serviços ou comprar produtos dos parceiros. Será cobrada uma taxa dos parceiros e dos clientes, descontada em forma de indenização pela utilização do app.
+
+Todo profissional da área de estética ou que tenha necessidade de agendamento para prestar serviços por hora ou vender produtos poderá se filiar. É vedado o uso para fins ilícitos, conforme previsto no CPP e LGPD.
+
+O pagamento poderá ser realizado por cartão de débito, crédito, Pix ou dinheiro.
+
+O app terá programa de milhagens por fidelização ao parceiro favorito.
+
+Cada parte pagará seus impostos.
