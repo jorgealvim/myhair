@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Explorar</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; padding-bottom: 30px; }
+        
+        header { background: white; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
+        
+        .categorias-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 15px; background: white; border-bottom: 1px solid #eee; scrollbar-width: none; }
+        .categorias-scroll::-webkit-scrollbar { display: none; } /* Esconde barra no Chrome/Safari */
+
+        .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 70px; cursor: pointer; transition: 0.3s; opacity: 0.5; }
+        .cat-item.active { opacity: 1; transform: scale(1.1); color: var(--dark-blue); }
+        .cat-item span { font-size: 24px; }
+        .cat-item p { margin: 5px 0 0; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+
+        .lista-profissionais { max-width: 600px; margin: 0 auto; padding: 15px; }
+        
+        .card-parceiro { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; gap: 15px; align-items: center; border-left: 5px solid var(--blue); }
+        .card-parceiro.vip { border-left-color: #ffd700; }
+        
+        .icone-parceiro { width: 60px; height: 60px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: var(--dark-blue); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0; }
+        
+        .info-parceiro { flex-grow: 1; min-width: 0; } /* min-width evita quebra de layout com nomes longos */
+        .info-parceiro h3 { margin: 0; font-size: 16px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .info-parceiro .local { font-size: 11px; color: #888; margin: 3px 0; }
+        
+        .servicos-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+        .tag-serv { font-size: 9px; padding: 2px 6px; background: #e1f5fe; border-radius: 4px; color: #0277bd; font-weight: bold; text-transform: uppercase; }
+
+        .btn-perfil { background: var(--blue); color: #000; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; flex-shrink: 0; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1 style="margin:0; font-size: 20px;">MY HAIR</h1>
+</header>
+
+<div class="categorias-scroll" id="menuCategorias">
+    <div class="cat-item active" onclick="filtrarPorServico('todos', this)">
+        <span>🌟</span><p>Todos</p>
+    </div>
+    <div class="cat-item" onclick="filtrarPorServico('cabelo', this)">
+        <span>💇‍♂️</span><p>Cabelo</p>
+    </div>
+    <div class="cat-item" onclick="filtrarPorServico('pe', this)">
+        <span>👣</span><p>Pé</p>
+    </div>
+    <div class="cat-item" onclick="filtrarPorServico('mao', this)">
+        <span>💅</span><p>Mão</p>
+    </div>
+    <div class="cat-item" onclick="filtrarPorServico('sobrancelha', this)">
+        <span>👁️</span><p>Sobrancelha</p>
+    </div>
+    <div class="cat-item" onclick="filtrarPorServico('maquiagem', this)">
+        <span>💄</span><p>Make</p>
+    </div>
+    <div class="cat-item" onclick="filtrarPorServico('barba', this)">
+        <span>🧔</span><p>Barba</p>
+    </div>
+    <div class="cat-item" onclick="filtrarPorServico('massagem', this)">
+        <span>💆‍♀️</span><p>Massagem</p>
+    </div>
+</div>
+
+<main class="lista-profissionais" id="listaProfissionais">
+    <p style="text-align: center; color: #666;">Buscando profissionais...</p>
+</main>
+
+<script>
+    // Substitua pelos seus dados reais do Firebase
+    const firebaseConfig = {
+        apiKey: "COLE_AQUI",
+        authDomain: "my-hair-v2.firebaseapp.com",
+        projectId: "my-hair-v2",
+        storageBucket: "my-hair-v2.appspot.com",
+        messagingSenderId: "COLE_AQUI",
+        appId: "COLE_AQUI"
+    };
+    
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
+    let profissionaisCache = [];
+
+    async function carregarProfissionais() {
+        const lista = document.getElementById('listaProfissionais');
+        try {
+            // Buscamos apenas documentos que tenham o campo 'nome' ou 'fantasia' para evitar lixo
+            const snapshot = await db.collection("usuarios").get();
+            profissionaisCache = [];
+            
+            snapshot.forEach(doc => {
+                const dados = doc.data();
+                // Só adiciona se tiver um identificador básico
+                if (dados.nome || dados.fantasia) {
+                    profissionaisCache.push({ idDoc: doc.id, ...dados });
+                }
+            });
+            
+            renderizar(profissionaisCache);
+        } catch (e) {
+            console.error(e);
+            lista.innerHTML = "<p style='text-align:center;'>Erro ao carregar dados. Verifique o console.</p>";
+        }
+    }
+
+    function renderizar(dados) {
+        const lista = document.getElementById('listaProfissionais');
+        lista.innerHTML = "";
+
+        if (dados.length === 0) {
+            lista.innerHTML = "<p style='text-align:center; color: #666;'>Nenhum profissional encontrado.</p>";
+            return;
+        }
+
+        dados.forEach(p => {
+            const nomeDisp = p.fantasia || p.nome || "Profissional";
+            const inicial = nomeDisp.charAt(0).toUpperCase();
+            const bairro = p.bairro || "Bairro não informado";
+            const cidade = p.cidade || "";
+            
+            let tagsHtml = "";
+            if (p.servicosOferecidos && Array.isArray(p.servicosOferecidos)) {
+                p.servicosOferecidos.forEach(s => {
+                    tagsHtml += `<span class="tag-serv">${s}</span>`;
+                });
+            }
+
+            lista.innerHTML += `
+                <div class="card-parceiro ${p.tipoConta === 'PJ' ? 'vip' : ''}">
+                    <div class="icone-parceiro">${inicial}</div>
+                    <div class="info-parceiro">
+                        <h3>${nomeDisp}</h3>
+                        <p class="local">📍 ${bairro} ${cidade ? '- ' + cidade : ''}</p>
+                        <div class="servicos-tags">${tagsHtml}</div>
+                    </div>
+                    <a href="perfil.html?id=${p.idSistema || p.idDoc}&modo=cliente" class="btn-perfil">VER</a>
+                </div>
+            `;
+        });
+    }
+
+    function filtrarPorServico(servico, elemento) {
+        document.querySelectorAll('.cat-item').forEach(i => i.classList.remove('active'));
+        elemento.classList.add('active');
+
+        if (servico === 'todos') {
+            renderizar(profissionaisCache);
+        } else {
+            const filtrados = profissionaisCache.filter(p => 
+                p.servicosOferecidos && 
+                Array.isArray(p.servicosOferecidos) && 
+                p.servicosOferecidos.includes(servico)
+            );
+            renderizar(filtrados);
+        }
+    }
+
+    window.onload = carregarProfissionais;
+</script>
+</body>
+</html>

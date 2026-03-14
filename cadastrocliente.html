@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Cadastro Cliente</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; color: #000; }
+        header { background-color: #fff; padding: 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        main { padding: 20px; max-width: 450px; margin: 0 auto; }
+        .form-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2 { font-size: 14px; border-bottom: 2px solid #b3e5fc; padding-bottom: 8px; margin-top: 10px; text-transform: uppercase; text-align: center; }
+        label { display: block; margin-top: 15px; font-weight: bold; font-size: 11px; }
+        input { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        .btn-save { width: 100%; padding: 16px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; }
+        .links-aux { text-align: center; margin-top: 20px; font-size: 13px; }
+        .links-aux a { color: #0288d1; text-decoration: none; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<header><h1>MY HAIR</h1><p>Cadastro de Cliente</p></header>
+
+<main>
+    <div class="form-card">
+        <form id="formCliente">
+            <h2>Crie sua conta</h2>
+            
+            <label>NOME COMPLETO</label>
+            <input type="text" id="nomeCliente" placeholder="Digite seu nome">
+
+            <label>CPF</label>
+            <input type="text" id="cpfCliente" placeholder="000.000.000-00">
+
+            <label>WHATSAPP</label>
+            <input type="text" id="whatsCliente" placeholder="(00) 00000-0000">
+
+            <label>CRIAR SENHA</label>
+            <input type="password" id="senhaCliente" placeholder="******">
+
+            <button type="button" class="btn-save" onclick="salvarCliente()">FINALIZAR CADASTRO</button>
+            
+            <div class="links-aux">
+                Já tem conta? <a href="index.html">Fazer Login</a>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    // Configurações do Firebase
+    const firebaseConfig = {
+        apiKey: "COLE_AQUI",
+        authDomain: "my-hair-v2.firebaseapp.com",
+        projectId: "my-hair-v2",
+        storageBucket: "my-hair-v2.appspot.com",
+        messagingSenderId: "COLE_AQUI",
+        appId: "COLE_AQUI"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    async function salvarCliente() {
+        const nome = document.getElementById('nomeCliente').value;
+        const cpf = document.getElementById('cpfCliente').value;
+        const whats = document.getElementById('whatsCliente').value;
+        const senha = document.getElementById('senhaCliente').value;
+
+        if (!nome || !cpf || !whats || !senha) {
+            alert("Por favor, preencha todos os campos.");
+            return;
+        }
+
+        const btn = document.querySelector('.btn-save');
+        btn.innerText = "CADASTRANDO...";
+        btn.disabled = true;
+
+        const dados = {
+            tipoUsuario: "CLIENTE",
+            nome: nome,
+            cpf: cpf,
+            whatsapp: whats,
+            senha: senha,
+            dataCadastro: new Date().toISOString()
+        };
+
+        try {
+            // Salvando na coleção separada "clientes"
+            await db.collection("clientes").add(dados);
+            alert("Cadastro realizado com sucesso! Bem-vindo ao MY HAIR.");
+            window.location.href = "visaogeral.html";
+        } catch(e) {
+            alert("Erro ao realizar cadastro.");
+            btn.innerText = "FINALIZAR CADASTRO";
+            btn.disabled = false;
+        }
+    }
+</script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Cadastro Geral</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; color: #000; }
+        header { background-color: #fff; padding: 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        main { padding: 20px; max-width: 550px; margin: 0 auto; }
+        .form-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2 { font-size: 14px; border-bottom: 2px solid #b3e5fc; padding-bottom: 8px; margin-top: 25px; text-transform: uppercase; }
+        label { display: block; margin-top: 12px; font-weight: bold; font-size: 11px; }
+        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        
+        /* Estilo para Grades de Ícones/Checkboxes */
+        .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
+        .icon-item { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px; border: 1px solid #eee; border-radius: 8px; cursor: pointer; transition: 0.3s; text-align: center; }
+        .icon-item input { display: none; }
+        .icon-item span { font-size: 24px; margin-bottom: 5px; }
+        .icon-item p { margin: 0; font-size: 11px; font-weight: bold; }
+        
+        /* Efeito de Seleção */
+        .icon-item:has(input:checked) { background-color: #e3f2fd; border-color: #2196f3; color: #1565c0; }
+
+        .check-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .check-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: normal; cursor: pointer; }
+        .check-item input { width: auto; margin: 0; padding: 0; cursor: pointer; }
+
+        .id-caixa { background: #e3f2fd; padding: 12px; border-radius: 6px; border: 1px dashed #2196f3; font-weight: bold; text-align: center; margin-bottom: 20px; color: #1565c0; }
+        .row { display: flex; gap: 10px; }
+        .half { flex: 1; }
+        .third { flex: 0.3; }
+        .hidden { display: none; }
+        
+        .btn-voltar { background: #eee; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+        .btn-save { width: 100%; padding: 16px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; }
+        .btn-row { display: flex; gap: 10px; margin-top: 15px; }
+        .btn-edit { flex: 1; padding: 12px; background: #fff; border: 1px solid #b3e5fc; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-delete { flex: 1; padding: 12px; background: #fff; border: 1px solid #ffcdd2; border-radius: 8px; cursor: pointer; font-weight: bold; color: #d32f2f; }
+        .loading { font-size: 11px; color: #0288d1; display: none; }
+    </style>
+</head>
+<body>
+
+<header><h1>MY HAIR</h1><p>Cadastro Unificado</p></header>
+
+<main>
+    <div class="form-card">
+        <button type="button" class="btn-voltar" onclick="history.back()">← VOLTAR</button>
+
+        <label>ID DO SISTEMA</label>
+        <div id="displayID" class="id-caixa">GERANDO...</div>
+
+        <form id="formGeral">
+            <h2>Tipo de Atuação</h2>
+            <select id="tipoConta" onchange="mudarTipo()">
+                <option value="PF">Pessoa Física (Autônomo)</option>
+                <option value="PJ">Pessoa Jurídica (Salão/Empresa)</option>
+            </select>
+
+            <h2>Serviços Oferecidos</h2>
+            <div class="icon-grid">
+                <label class="icon-item"><span>💇‍♂️</span><p>Cabelo</p><input type="checkbox" name="servicos" value="cabelo"></label>
+                <label class="icon-item"><span>👣</span><p>Pé</p><input type="checkbox" name="servicos" value="pe"></label>
+                <label class="icon-item"><span>💅</span><p>Mão</p><input type="checkbox" name="servicos" value="mao"></label>
+                <label class="icon-item"><span>👁️</span><p>Sobrancelha</p><input type="checkbox" name="servicos" value="sobrancelha"></label>
+                <label class="icon-item"><span>💄</span><p>Maquiagem</p><input type="checkbox" name="servicos" value="maquiagem"></label>
+                <label class="icon-item"><span>💆‍♀️</span><p>Massagem</p><input type="checkbox" name="servicos" value="massagem"></label>
+                <label class="icon-item"><span>🧔</span><p>Barba</p><input type="checkbox" name="servicos" value="barba"></label>
+                <label class="icon-item"><span>🍯</span><p>Depilação</p><input type="checkbox" name="servicos" value="depilacao"></label>
+            </div>
+
+            <h2>Produtos para Venda</h2>
+            <div class="icon-grid">
+                <label class="icon-item"><span>🧴</span><p>Cremes</p><input type="checkbox" name="produtos" value="cremes"></label>
+                <label class="icon-item"><span>🧼</span><p>Shampoos</p><input type="checkbox" name="produtos" value="shampoos"></label>
+                <label class="icon-item"><span>✂️</span><p>Acessórios</p><input type="checkbox" name="produtos" value="acessorios"></label>
+                <label class="icon-item"><span>🧪</span><p>Tinturas</p><input type="checkbox" name="produtos" value="tinturas"></label>
+            </div>
+
+            <h2>Local de Prestação de Serviços</h2>
+            <div class="check-group">
+                <label class="check-item"><input type="checkbox" name="localServico" value="empresa"> Na Empresa</label>
+                <label class="check-item"><input type="checkbox" name="localServico" value="domicilio"> A Domicílio</label>
+            </div>
+
+            <h2>Dados de Identificação</h2>
+            <label id="labelDoc">CPF</label>
+            <input type="text" id="documento" placeholder="000.000.000-00" onblur="consultarCNPJ()">
+            <span id="loadCnpj" class="loading">Consultando Receita Federal...</span>
+            
+            <label id="labelNome">Nome Completo</label>
+            <input type="text" id="nome">
+
+            <div id="areaPJ" class="hidden">
+                <label>Nome Fantasia</label>
+                <input type="text" id="fantasia">
+            </div>
+
+            <div class="row">
+                <div class="half"><label>WhatsApp</label><input type="text" id="whats"></div>
+                <div class="half"><label>E-mail</label><input type="email" id="email"></div>
+            </div>
+
+            <div class="row">
+                <div class="half"><label>Criar Senha</label><input type="password" id="senha"></div>
+                <div class="half"><label>Confirmar Senha</label><input type="password" id="confirmarSenha"></div>
+            </div>
+
+            <h2>Endereço Completo</h2>
+            <label>CEP</label>
+            <input type="text" id="cep" placeholder="00000-000" onblur="buscarCEP(this.value)">
+            
+            <label>Rua/Logradouro</label>
+            <input type="text" id="rua">
+
+            <div class="row">
+                <div class="third"><label>Nº</label><input type="text" id="numero" placeholder="123"></div>
+                <div class="half"><label>Complemento</label><input type="text" id="complemento" placeholder="Apto, Bloco, etc."></div>
+            </div>
+
+            <div class="row">
+                <div class="half"><label>Bairro</label><input type="text" id="bairro"></div>
+                <div class="half"><label>Cidade/UF</label><input type="text" id="cidade"></div>
+            </div>
+
+            <h2>Forma de Retirada dos Produtos</h2>
+            <div class="check-group">
+                <label class="check-item"><input type="checkbox" name="retiradaProduto" value="empresa"> Na Empresa</label>
+                <label class="check-item"><input type="checkbox" name="retiradaProduto" value="entrega"> Entrega</label>
+                <label class="check-item"><input type="checkbox" name="retiradaProduto" value="transportadora"> Despacho por Transportadora</label>
+            </div>
+
+            <h2>Dados Bancários (Repasse 85%)</h2>
+            <label>Banco</label>
+            <select id="banco">
+                <option value="">Selecione o Banco</option>
+                <option value="Nubank">260 - Nubank</option>
+                <option value="BB">001 - Banco do Brasil</option>
+                <option value="Itau">341 - Itaú</option>
+                <option value="Bradesco">237 - Bradesco</option>
+                <option value="Inter">077 - Inter</option>
+            </select>
+            <div class="row">
+                <div class="half"><label>Agência</label><input type="text" id="ag"></div>
+                <div class="half"><label>Conta com Dígito</label><input type="text" id="cc"></div>
+            </div>
+
+            <button type="button" class="btn-save" onclick="salvarCadastro()">SALVAR E IR PARA PREÇOS</button>
+            
+            <div class="btn-row">
+                <button type="button" class="btn-edit" onclick="habilitarEdicao()">EDITAR DADOS</button>
+                <button type="button" class="btn-delete" onclick="excluirCadastro()">EXCLUIR CONTA</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "COLE_AQUI",
+        authDomain: "my-hair-v2.firebaseapp.com",
+        projectId: "my-hair-v2",
+        storageBucket: "my-hair-v2.appspot.com",
+        messagingSenderId: "COLE_AQUI",
+        appId: "COLE_AQUI"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    let idDocFirebase = null; 
+
+    const idGerado = localStorage.getItem('usuarioID') || "MH-NOVO";
+    document.getElementById('displayID').innerText = idGerado;
+
+    function mudarTipo() {
+        const tipo = document.getElementById('tipoConta').value;
+        document.getElementById('labelDoc').innerText = tipo === 'PJ' ? 'CNPJ' : 'CPF';
+        document.getElementById('labelNome').innerText = tipo === 'PJ' ? 'Razão Social' : 'Nome Completo';
+        document.getElementById('areaPJ').style.display = tipo === 'PJ' ? 'block' : 'none';
+    }
+
+    async function buscarCEP(valor) {
+        const cep = valor.replace(/\D/g, '');
+        if(cep.length === 8) {
+            const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`);
+            const d = await res.json();
+            if(!d.erro) {
+                document.getElementById('rua').value = d.logradouro;
+                document.getElementById('bairro').value = d.bairro;
+                document.getElementById('cidade').value = d.localidade + "/" + d.uf;
+                document.getElementById('numero').focus();
+            }
+        }
+    }
+
+    async function consultarCNPJ() {
+        const tipo = document.getElementById('tipoConta').value;
+        const doc = document.getElementById('documento').value.replace(/\D/g, '');
+        if(tipo === 'PJ' && doc.length === 14) {
+            document.getElementById('loadCnpj').style.display = 'block';
+            try {
+                const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${doc}`);
+                const d = await res.json();
+                document.getElementById('nome').value = d.razao_social;
+                document.getElementById('fantasia').value = d.nome_fantasia || d.razao_social;
+                document.getElementById('cep').value = d.cep;
+                buscarCEP(d.cep);
+            } catch(e) { alert("Erro ao consultar CNPJ."); }
+            finally { document.getElementById('loadCnpj').style.display = 'none'; }
+        }
+    }
+
+    async function salvarCadastro() {
+        const senha = document.getElementById('senha').value;
+        const confirmar = document.getElementById('confirmarSenha').value;
+
+        if (senha !== confirmar) {
+            alert("As senhas não coincidem!");
+            return;
+        }
+
+        const btn = document.querySelector('.btn-save');
+        btn.innerText = "SALVANDO...";
+
+        // Coletar Arrays de Seleção
+        const servicos = Array.from(document.querySelectorAll('input[name="servicos"]:checked')).map(cb => cb.value);
+        const produtos = Array.from(document.querySelectorAll('input[name="produtos"]:checked')).map(cb => cb.value);
+        const locais = Array.from(document.querySelectorAll('input[name="localServico"]:checked')).map(cb => cb.value);
+        const retiradas = Array.from(document.querySelectorAll('input[name="retiradaProduto"]:checked')).map(cb => cb.value);
+        
+        const dados = {
+            idSistema: idGerado,
+            tipoConta: document.getElementById('tipoConta').value,
+            servicosOferecidos: servicos,
+            produtosVenda: produtos,
+            locaisPrestacao: locais,
+            formasRetirada: retiradas,
+            documento: document.getElementById('documento').value,
+            nome: document.getElementById('nome').value,
+            fantasia: document.getElementById('fantasia').value || "",
+            whats: document.getElementById('whats').value,
+            email: document.getElementById('email').value,
+            senha: senha,
+            cep: document.getElementById('cep').value,
+            rua: document.getElementById('rua').value,
+            numero: document.getElementById('numero').value,
+            complemento: document.getElementById('complemento').value,
+            bairro: document.getElementById('bairro').value,
+            cidade: document.getElementById('cidade').value,
+            banco: document.getElementById('banco').value,
+            agencia: document.getElementById('ag').value,
+            conta: document.getElementById('cc').value,
+            dataRegistro: new Date().toISOString()
+        };
+
+        try {
+            if (idDocFirebase) {
+                await db.collection("usuarios").doc(idDocFirebase).update(dados);
+                alert("Cadastro atualizado!");
+            } else {
+                const docRef = await db.collection("usuarios").add(dados);
+                idDocFirebase = docRef.id;
+                alert("Cadastro realizado com sucesso!");
+            }
+            window.location.href = "perfil.html";
+        } catch(e) {
+            alert("Erro ao salvar no banco de dados.");
+            btn.innerText = "SALVAR E IR PARA PREÇOS";
+        }
+    }
+
+    function habilitarEdicao() {
+        alert("Modo edição ativado.");
+        document.getElementById('nome').focus();
+    }
+
+    async function excluirCadastro() {
+        if (!idDocFirebase) return alert("Salve o cadastro antes de excluir.");
+        if (confirm("Deseja realmente apagar sua conta?")) {
+            try {
+                await db.collection("usuarios").doc(idDocFirebase).delete();
+                alert("Conta excluída.");
+                window.location.href = "index.html";
+            } catch (e) { alert("Erro ao excluir."); }
+        }
+    }
+</script>
+</body>
+</html>

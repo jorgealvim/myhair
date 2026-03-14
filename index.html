@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Login</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+        
+        .login-card { background: white; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 350px; text-align: center; }
+        
+        h1 { color: #000; margin-bottom: 5px; font-size: 32px; letter-spacing: -1px; }
+        .subtitle { color: #666; font-size: 14px; margin-bottom: 25px; }
+        
+        input { width: 100%; padding: 12px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        
+        .btn-entrar { width: 100%; padding: 14px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; transition: 0.3s; margin-top: 10px; }
+        .btn-entrar:hover { background-color: #81d4fa; }
+        
+        .links-aux { margin-top: 20px; font-size: 13px; line-height: 1.6; }
+        .links-aux a { color: #0288d1; text-decoration: none; font-weight: bold; display: block; margin-top: 10px; }
+        .links-aux a:hover { text-decoration: underline; }
+
+        .btn-cadastro { display: block; padding: 10px; margin-top: 10px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 13px; transition: 0.3s; }
+        .btn-parceiro { background-color: #fff; border: 1px solid #b3e5fc; color: #0288d1; }
+        .btn-usuario { background-color: #fff; border: 1px solid #ddd; color: #666; }
+        .btn-parceiro:hover { background-color: #f0faff; }
+        .btn-usuario:hover { background-color: #f9f9f9; }
+
+        .objetivos-container { max-width: 400px; margin-top: 40px; text-align: center; color: #444; }
+        .objetivos-container h2 { font-size: 18px; color: #000; margin-bottom: 15px; }
+        .objetivo-item { background: rgba(255, 255, 255, 0.5); padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; border-left: 4px solid #b3e5fc; text-align: left; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h1>MY HAIR</h1>
+    <div class="subtitle">Gestão para Profissionais de Beleza</div>
+
+    <input type="email" id="email" placeholder="E-mail ou CPF">
+    <input type="password" id="senha" placeholder="Senha">
+
+    <button class="btn-entrar" id="btn-entrar">ENTRAR</button>
+
+    <div class="links-aux">
+        <a href="esqueci_senha.html">Esqueci minha senha</a>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+        
+        <p>Ainda não tem conta?</p>
+        <a href="#" class="btn-cadastro btn-parceiro" onclick="gerarIdEIrParaCadastro()">CADASTRAR COMO PARCEIRO</a>
+        
+        <a href="cadastrocliente.html" class="btn-cadastro btn-usuario">CADASTRAR COMO USUÁRIO</a>
+    </div>
+</div>
+
+<div class="objetivos-container">
+    <h2>Nossos Objetivos</h2>
+    <div class="objetivo-item">
+        <b>Visibilidade:</b> Conectamos você a novos clientes na sua região de forma automática.
+    </div>
+    <div class="objetivo-item">
+        <b>Agilidade:</b> Gestão completa de horários e preços em uma única tela.
+    </div>
+    <div class="objetivo-item">
+        <b>Segurança Financeira:</b> Garantia de recebimento de 85% do valor via repasses seguros.
+    </div>
+</div>
+
+<script>
+    // Função para gerar o ID e encaminhar para cadastrogeral.html
+    function gerarID() {
+        const ano = new Date().getFullYear();
+        const aleatorio = Math.floor(1000 + Math.random() * 9000);
+        return `MH-${ano}-${aleatorio}`;
+    }
+
+    window.gerarIdEIrParaCadastro = function() {
+        const novoID = gerarID();
+        localStorage.setItem('usuarioID', novoID);
+        window.location.href = "cadastrogeral.html";
+    };
+
+    // Botão Entrar encaminha para a Visão Geral
+    document.getElementById('btn-entrar').addEventListener('click', () => {
+        window.location.href = "visaogeral.html";
+    });
+</script>
+
+</body>
+</html>

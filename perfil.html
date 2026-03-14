@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Painel do Profissional</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; color: #333; }
+        header { background: white; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        
+        /* Dados Básicos */
+        .perfil-resumo { background: white; margin: 10px auto; padding: 15px; max-width: 600px; border-radius: 12px; display: flex; align-items: center; gap: 15px; }
+        .avatar { width: 50px; height: 50px; background: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; }
+        .info-basica h3 { margin: 0; font-size: 16px; }
+        .info-basica p { margin: 2px 0; font-size: 12px; color: #666; }
+
+        /* Menu Deslizante (Tabs) */
+        .menu-tabs { display: flex; background: white; overflow-x: auto; sticky: top; top: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; border-bottom: 3px solid transparent; white-space: nowrap; }
+        .tab-btn.active { color: var(--dark-blue); border-bottom: 3px solid var(--dark-blue); }
+
+        main { max-width: 600px; margin: 0 auto; padding: 10px; }
+        .section-content { display: none; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .section-content.active { display: block; }
+
+        /* Estilização Geral de Tabelas e Forms */
+        h2 { font-size: 18px; margin-bottom: 15px; color: var(--dark-blue); }
+        .grid-row { display: flex; gap: 10px; margin-bottom: 10px; }
+        .col { flex: 1; }
+        label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        .btn-update { width: 100%; padding: 12px; background: var(--blue); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+
+        /* Agenda */
+        .slot-agenda { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .slot-time { font-weight: bold; font-size: 13px; min-width: 50px; }
+        
+        /* Tabelas */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+        th { text-align: left; background: #f9f9f9; padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #eee; }
+    </style>
+</head>
+<body>
+
+<header><h1>MY HAIR</h1></header>
+
+<div class="perfil-resumo">
+    <div class="avatar" id="avatarLetra">M</div>
+    <div class="info-basica">
+        <h3 id="nomeProfissional">Carregando...</h3>
+        <p id="idProfissional">ID: MH-0000</p>
+    </div>
+</div>
+
+<nav class="menu-tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'agenda')">AGENDA</button>
+    <button class="tab-btn" onclick="openTab(event, 'servicos')">SERVIÇOS</button>
+    <button class="tab-btn" onclick="openTab(event, 'produtos')">PRODUTOS</button>
+</nav>
+
+<main>
+    <section id="agenda" class="section-content active">
+        <h2>Minha Agenda</h2>
+        <div class="grid-row">
+            <div class="col"><label>Ano</label><input type="number" id="ano" value="2026"></div>
+            <div class="col">
+                <label>Mês</label>
+                <select id="mes">
+                    <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+                </select>
+            </div>
+            <div class="col"><label>Dia</label><input type="number" id="dia" value="13"></div>
+        </div>
+
+        <div id="listaHorarios">
+            </div>
+        <button class="btn-update" onclick="atualizarAgenda()">ATUALIZAR AGENDA</button>
+    </section>
+
+    <section id="servicos" class="section-content">
+        <h2>Tabela de Serviços</h2>
+        <div class="grid-row">
+            <input type="text" id="serv_nome" placeholder="Serviço (ex: Corte)">
+            <input type="text" id="serv_preco" placeholder="R$ 0,00" style="width: 80px;">
+            <input type="text" id="serv_horas" placeholder="Horas" style="width: 60px;">
+        </div>
+        <table>
+            <thead><tr><th>Serviço</th><th>Preço</th><th>Tempo</th></tr></thead>
+            <tbody id="corpoServicos"></tbody>
+        </table>
+        <button class="btn-update" onclick="atualizarServicos()">ATUALIZAR SERVIÇOS</button>
+    </section>
+
+    <section id="produtos" class="section-content">
+        <h2>Tabela de Produtos</h2>
+        <div class="grid-row">
+            <input type="text" id="prod_nome" placeholder="Produto">
+            <input type="number" id="prod_estoque" placeholder="Qtd" style="width: 60px;">
+            <input type="text" id="prod_preco" placeholder="Preço" style="width: 80px;">
+        </div>
+        <table>
+            <thead><tr><th>Produto</th><th>Estoque</th><th>Preço</th></tr></thead>
+            <tbody id="corpoProdutos"></tbody>
+        </table>
+        <button class="btn-update" onclick="atualizarProdutos()">ATUALIZAR PRODUTOS</button>
+    </section>
+</main>
+
+<script>
+    // Inicialização do Firebase (Use as mesmas credenciais do cadastro)
+    const firebaseConfig = { apiKey: "COLE_AQUI", projectId: "my-hair-v2", };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const idUsuario = localStorage.getItem('usuarioID') || "MH-NOVO";
+
+    // Lógica das Abas
+    function openTab(evt, tabName) {
+        let contents = document.getElementsByClassName("section-content");
+        for (let i = 0; i < contents.length; i++) contents[i].className = contents[i].className.replace(" active", "");
+        let btns = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < btns.length; i++) btns[i].className = btns[i].className.replace(" active", "");
+        document.getElementById(tabName).className += " active";
+        evt.currentTarget.className += " active";
+    }
+
+    // Gerar Horários de 30 em 30 min (08h às 19h)
+    function carregarSlotsAgenda() {
+        const lista = document.getElementById('listaHorarios');
+        lista.innerHTML = "";
+        for(let h = 8; h <= 19; h++) {
+            for(let m of ['00', '30']) {
+                const hora = `${h.toString().padStart(2, '0')}:${m}`;
+                lista.innerHTML += `
+                    <div class="slot-agenda">
+                        <span class="slot-time">${hora}</span>
+                        <input type="text" placeholder="Nome do Cliente" id="cli_${hora.replace(':','')}">
+                    </div>`;
+            }
+        }
+    }
+
+    // Funções de Atualização (Simulando Gravação no Firebase)
+    function atualizarAgenda() {
+        alert("Agenda atualizada para o dia selecionado!");
+    }
+
+    function atualizarServicos() {
+        const nome = document.getElementById('serv_nome').value;
+        const preco = document.getElementById('serv_preco').value;
+        const horas = document.getElementById('serv_horas').value;
+        if(nome) {
+            document.getElementById('corpoServicos').innerHTML += `<tr><td>${nome}</td><td>R$ ${preco}</td><td>${horas}h</td></tr>`;
+            document.getElementById('serv_nome').value = "";
+        }
+    }
+
+    function atualizarProdutos() {
+        const nome = document.getElementById('prod_nome').value;
+        const qtd = document.getElementById('prod_estoque').value;
+        const preco = document.getElementById('prod_preco').value;
+        if(nome) {
+            document.getElementById('corpoProdutos').innerHTML += `<tr><td>${nome}</td><td>${qtd}</td><td>R$ ${preco}</td></tr>`;
+            document.getElementById('prod_nome').value = "";
+        }
+    }
+
+    // Ao carregar a página
+    window.onload = () => {
+        document.getElementById('idProfissional').innerText = "ID: " + idUsuario;
+        carregarSlotsAgenda();
+        // Aqui você faria um db.collection("usuarios").where("idSistema", "==", idUsuario).get() para carregar o nome.
+    };
+</script>
+</body>
+</html>
