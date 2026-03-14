@@ -16,6 +16,8 @@
         .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
         .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
         header { background: white; padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+        .topo-nav { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 8px; padding: 7px 11px; font-size: 10px; font-weight: bold; }
 
         .categorias-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 12px; scrollbar-width: none; }
         .categorias-scroll::-webkit-scrollbar { display: none; } /* Esconde barra no Chrome/Safari */
@@ -96,6 +98,9 @@
 
 <div class="page-shell">
     <div class="login-card">
+        <div class="topo-nav">
+            <a id="btnVoltarVisao" href="index.html" class="btn-voltar">VOLTAR</a>
+        </div>
         <header>
             <h1 style="margin:0; font-size: 20px;">MY HAIR</h1>
         </header>
@@ -179,9 +184,15 @@
     const db = firebase.firestore();
 
     const params = new URLSearchParams(window.location.search);
-    const modoDesenvolvedorAtivo = params.get('dev') === '1'
-        || params.get('modo') === 'dev'
-        || localStorage.getItem('myhair_modo_dev') === '1';
+
+    function flagDevAtiva(valor) {
+        const texto = String(valor || '').trim().toLowerCase();
+        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
+    }
+
+    const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
+        || flagDevAtiva(params.get('modo'))
+        || flagDevAtiva(localStorage.getItem('myhair_modo_dev'));
 
     let saloesCache = [];
     let clientesCache = [];
@@ -213,7 +224,19 @@
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
-        identificadorAtual = usuarioAuth?.uid || localStorage.getItem('usuarioID') || 'anonimo';
+        if (usuarioAuth?.uid) {
+            identificadorAtual = usuarioAuth.uid;
+            return;
+        }
+
+        const tipoLocal = localStorage.getItem('myhair_tipo_usuario') || '';
+        const idLocal = localStorage.getItem('usuarioID') || '';
+        if (tipoLocal === 'cliente' && idLocal) {
+            identificadorAtual = idLocal;
+            return;
+        }
+
+        identificadorAtual = idLocal || 'anonimo';
     }
 
     function estaEmModoDesenvolvedor() {
@@ -699,6 +722,8 @@
             if (!buscaSalao.empty) {
                 const doc = buscaSalao.docs[0];
                 const dados = doc.data();
+                localStorage.setItem('myhair_tipo_usuario', 'salao');
+                localStorage.setItem('usuarioID', dados.idSistema || doc.id);
                 return {
                     id: dados.idSistema || doc.id,
                     tipo: 'salao',
@@ -708,6 +733,8 @@
             const buscaCliente = await db.collection('clientes').where('email', '==', usuarioAuth.email).limit(1).get();
             if (!buscaCliente.empty) {
                 const doc = buscaCliente.docs[0];
+                localStorage.setItem('myhair_tipo_usuario', 'cliente');
+                localStorage.setItem('usuarioID', doc.id);
                 return {
                     id: doc.id,
                     tipo: 'cliente',
@@ -716,10 +743,46 @@
         }
 
         const idLocal = localStorage.getItem('usuarioID');
+        const tipoLocal = localStorage.getItem('myhair_tipo_usuario') || '';
         if (idLocal) {
+            if (tipoLocal === 'cliente') {
+                const clienteDoc = await db.collection('clientes').doc(idLocal).get();
+                if (clienteDoc.exists) {
+                    return {
+                        id: idLocal,
+                        tipo: 'cliente',
+                    };
+                }
+            }
+
+            if (tipoLocal === 'salao') {
+                return {
+                    id: idLocal,
+                    tipo: 'salao',
+                };
+            }
+
+            const clienteDoc = await db.collection('clientes').doc(idLocal).get();
+            if (clienteDoc.exists) {
+                localStorage.setItem('myhair_tipo_usuario', 'cliente');
+                return {
+                    id: idLocal,
+                    tipo: 'cliente',
+                };
+            }
+
+            const salaoDoc = await db.collection('usuarios').doc(idLocal).get();
+            if (salaoDoc.exists) {
+                localStorage.setItem('myhair_tipo_usuario', 'salao');
+                return {
+                    id: idLocal,
+                    tipo: 'salao',
+                };
+            }
+
             return {
                 id: idLocal,
-                tipo: 'salao',
+                tipo: 'cliente',
             };
         }
 
@@ -820,6 +883,8 @@
             const perfil = await resolverPerfilAtual();
             identificadorAtual = perfil.id;
             tipoAtual = perfil.tipo;
+            localStorage.setItem('usuarioID', identificadorAtual);
+            localStorage.setItem('myhair_tipo_usuario', tipoAtual);
 
             const [saloesSnap, clientesSnap] = await Promise.all([
                 db.collection('usuarios').get(),

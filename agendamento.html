@@ -30,9 +30,36 @@
         .locais-opcoes input { width: auto; margin: 0; }
         .status-local { margin-top: 8px; font-size: 12px; color: #5b7184; }
         .status { font-size: 13px; color: #666; margin: 0; }
+        .bloco-titulo { margin: 0 0 10px; font-size: 16px; color: #204863; }
+        .compras-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
+        .tabela-wrap { border: 1px solid #e2ebf3; border-radius: 10px; overflow: hidden; }
+        .tabela-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .tabela-wrap th, .tabela-wrap td { border-bottom: 1px solid #e9f0f6; padding: 8px; text-align: left; }
+        .tabela-wrap th { background: #f4f9ff; color: #30516b; font-size: 12px; }
+        .tabela-wrap tr:last-child td { border-bottom: none; }
+        .qtd-servico { width: 62px; padding: 6px; border: 1px solid #cfe1ef; border-radius: 8px; }
+        .btn-add { border: 1px solid #b9d8ef; background: #ecf7ff; color: #0e5a8b; border-radius: 8px; padding: 7px 10px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .aviso-deslocamento { margin: 8px 0 0; font-size: 12px; color: #446078; }
+        .carrinho { border: 1px solid #e2ebf3; border-radius: 10px; padding: 10px; background: #fbfdff; }
+        .carrinho h3 { margin: 0 0 8px; font-size: 14px; color: #2d4c65; }
+        .item-carrinho { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; padding: 6px 0; border-bottom: 1px dashed #e4edf4; }
+        .item-carrinho:last-child { border-bottom: none; }
+        .btn-remover { border: none; background: transparent; color: #b13737; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .linha-total { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; color: #2f4f68; }
+        .linha-total.grande { margin-top: 10px; padding-top: 8px; border-top: 1px solid #d7e6f2; font-weight: bold; font-size: 15px; color: #143d5b; }
+        .campo-km { margin-top: 8px; }
+        .campo-km input { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 8px; border: 1px solid #cfe1ef; }
+        .grid-enderecos { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }
+        .acoes-maps { display: flex; gap: 8px; margin-top: 8px; }
+        .btn-maps { border: 1px solid #9bccec; background: #e9f6ff; color: #09517e; border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .status-maps { margin-top: 6px; font-size: 11px; color: #567288; }
+        .vazio-carrinho { font-size: 12px; color: #6d8294; }
         .btn-confirmar { margin-top: 12px; width: 100%; border: none; border-radius: 10px; background: var(--blue); color: #053b5c; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; }
         .painel-status { margin-top: 12px; border: 1px solid #d9e8f3; border-radius: 12px; padding: 12px; background: #f8fcff; }
         .painel-status h3 { margin: 0 0 8px; font-size: 14px; color: #264863; }
+        .resumo-status { margin-top: 8px; border-top: 1px dashed #d5e5f2; padding-top: 8px; }
+        .resumo-status .linha { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: #36536a; margin-top: 4px; }
+        .resumo-status .linha.total { font-weight: bold; font-size: 13px; color: #123f60; }
         .badge-status { display: inline-block; font-size: 11px; font-weight: bold; border-radius: 999px; padding: 4px 9px; text-transform: uppercase; }
         .badge-status.pendente { background: #fff1cc; color: #875f00; }
         .badge-status.aceito { background: #def4e6; color: #1f6a36; }
@@ -42,6 +69,7 @@
             body { padding: 12px; }
             .card { padding: 14px; }
             .dados { grid-template-columns: 1fr; }
+            .compras-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -83,10 +111,63 @@
             <button id="btnConfirmar" class="btn-confirmar" type="button">SOLICITAR AGENDAMENTO</button>
         </div>
 
+        <div class="bloco" style="margin-top:12px;">
+            <h2 class="bloco-titulo">Serviços e carrinho</h2>
+            <div class="compras-grid">
+                <div>
+                    <div class="tabela-wrap">
+                        <table>
+                            <thead>
+                            <tr>
+                                <th>Serviço</th>
+                                <th>Preço</th>
+                                <th>Tempo</th>
+                                <th>Qtd</th>
+                                <th>Ação</th>
+                            </tr>
+                            </thead>
+                            <tbody id="tabelaServicosAgendamento"></tbody>
+                        </table>
+                    </div>
+                    <p class="aviso-deslocamento">Taxa de deslocamento: R$ 2,00 por km por trecho (ida e volta = R$ 4,00 por km).</p>
+                </div>
+                <div class="carrinho">
+                    <h3>Carrinho de compras</h3>
+                    <div id="itensCarrinho"></div>
+                    <div class="grid-enderecos">
+                        <div>
+                            <label for="origemDeslocamento">Origem (prestador)</label>
+                            <input type="text" id="origemDeslocamento" placeholder="Endereço de saída do prestador">
+                        </div>
+                        <div>
+                            <label for="destinoDeslocamento">Destino (cliente)</label>
+                            <input type="text" id="destinoDeslocamento" placeholder="Endereço do cliente para atendimento">
+                        </div>
+                    </div>
+                    <div class="campo-km">
+                        <label for="distanciaKm">Distância calculada (km - trecho de ida)</label>
+                        <input type="number" id="distanciaKm" min="0" step="0.1" value="0" readonly>
+                    </div>
+                    <div class="acoes-maps">
+                        <button type="button" id="btnCalcularMaps" class="btn-maps">CALCULAR DISTÂNCIA (GOOGLE MAPS)</button>
+                    </div>
+                    <p id="statusMaps" class="status-maps">Informe os endereços e calcule a distância para cobrança de deslocamento.</p>
+                    <div class="linha-total"><span>Subtotal serviços</span><strong id="subtotalServicos">R$ 0,00</strong></div>
+                    <div class="linha-total"><span>Deslocamento</span><strong id="valorDeslocamento">R$ 0,00</strong></div>
+                    <div class="linha-total grande"><span>Total</span><strong id="valorTotalCarrinho">R$ 0,00</strong></div>
+                </div>
+            </div>
+        </div>
+
         <div id="painelStatusSolicitacao" class="painel-status" style="display:none;">
             <h3>Status da sua solicitação</h3>
             <p style="margin:0 0 6px;"><span id="badgeStatusSolicitacao" class="badge-status pendente">pendente</span></p>
             <p id="statusMensagemSolicitacao" class="status">Aguardando retorno do prestador.</p>
+            <div id="resumoFinanceiroSolicitacao" class="resumo-status" style="display:none;">
+                <div class="linha"><span>Subtotal serviços</span><strong id="resumoSubtotalServicos">R$ 0,00</strong></div>
+                <div class="linha"><span>Deslocamento</span><strong id="resumoTaxaDeslocamento">R$ 0,00</strong></div>
+                <div class="linha total"><span>Total</span><strong id="resumoValorTotal">R$ 0,00</strong></div>
+            </div>
         </div>
     </div>
 </div>
@@ -111,15 +192,26 @@
     const params = new URLSearchParams(window.location.search);
     const prestadorId = params.get('prestadorId') || '';
     const prestadorNomeParam = params.get('prestadorNome') || '';
-    const modoDesenvolvedorAtivo = params.get('dev') === '1'
-        || params.get('modo') === 'dev'
-        || localStorage.getItem('myhair_modo_dev') === '1';
+
+    function flagDevAtiva(valor) {
+        const texto = String(valor || '').trim().toLowerCase();
+        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
+    }
+
+    const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
+        || flagDevAtiva(params.get('modo'))
+        || flagDevAtiva(localStorage.getItem('myhair_modo_dev'));
 
     let prestadorAtual = null;
     let clienteAtual = { id: 'anonimo', nome: 'Cliente' };
     let horaSelecionada = '';
     let solicitacaoAtualId = '';
     let unsubscribeSolicitacao = null;
+    let servicosDisponiveis = [];
+    let carrinho = [];
+    let distanciaCalculadaViaMaps = false;
+    let carregamentoGoogleMaps = null;
+    const TAXA_DESLOCAMENTO_POR_KM_TRECHO = 2;
 
     function sanitizarId(valor) {
         return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -131,6 +223,386 @@
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase()
             .trim();
+    }
+
+    function parseMoeda(valor) {
+        if (typeof valor === 'number') {
+            return Number.isFinite(valor) ? valor : 0;
+        }
+        const numero = String(valor || '')
+            .replace(/\s/g, '')
+            .replace(/\./g, '')
+            .replace(',', '.')
+            .replace(/[^\d.-]/g, '');
+        const convertido = Number(numero);
+        return Number.isFinite(convertido) ? convertido : 0;
+    }
+
+    function formatarMoeda(valor) {
+        return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
+    }
+
+    function montarEnderecoCompleto(dados) {
+        if (!dados || typeof dados !== 'object') {
+            return '';
+        }
+        const rua = String(dados.endereco || dados.rua || '').trim();
+        const numero = String(dados.numero || '').trim();
+        const bairro = String(dados.bairro || '').trim();
+        const cidade = String(dados.cidade || '').trim();
+        const uf = String(dados.uf || '').trim();
+        const cep = String(dados.cep || '').trim();
+        return [
+            [rua, numero].filter(Boolean).join(', '),
+            bairro,
+            [cidade, uf].filter(Boolean).join(' - '),
+            cep,
+        ].filter(Boolean).join(', ');
+    }
+
+    function obterGoogleMapsApiKey() {
+        const keyParam = params.get('gmapsKey') || '';
+        const keyLocal = localStorage.getItem('myhair_google_maps_api_key') || '';
+        const keyGlobal = window.MYHAIR_GOOGLE_MAPS_API_KEY || '';
+        return String(keyParam || keyLocal || keyGlobal || '').trim();
+    }
+
+    function atualizarStatusMaps(texto, erro = false) {
+        const status = document.getElementById('statusMaps');
+        if (!status) {
+            return;
+        }
+        status.textContent = texto;
+        status.style.color = erro ? '#a23535' : '#567288';
+    }
+
+    async function carregarGoogleMapsApi() {
+        if (window.google?.maps?.DistanceMatrixService) {
+            return;
+        }
+
+        if (carregamentoGoogleMaps) {
+            await carregamentoGoogleMaps;
+            return;
+        }
+
+        const apiKey = obterGoogleMapsApiKey();
+        if (!apiKey) {
+            throw new Error('api_key_ausente');
+        }
+
+        carregamentoGoogleMaps = new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(apiKey)}&libraries=places`;
+            script.async = true;
+            script.defer = true;
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('falha_carregar_google_maps'));
+            document.head.appendChild(script);
+        });
+
+        await carregamentoGoogleMaps;
+    }
+
+    function gerarHorariosPadrao() {
+        const horarios = [];
+        for (let h = 8; h <= 19; h += 1) {
+            horarios.push(`${String(h).padStart(2, '0')}:00`);
+            horarios.push(`${String(h).padStart(2, '0')}:30`);
+        }
+        return horarios;
+    }
+
+    function horaValida(hora) {
+        return /^([01]\d|2[0-3]):[0-5]\d$/.test(String(hora || ''));
+    }
+
+    function obterHorariosDisponiveisDia(agendaDia) {
+        const disponiveis = new Set();
+
+        if (Array.isArray(agendaDia)) {
+            agendaDia.forEach((hora) => {
+                if (horaValida(hora)) {
+                    disponiveis.add(hora);
+                }
+            });
+            return Array.from(disponiveis).sort();
+        }
+
+        if (agendaDia && typeof agendaDia === 'object') {
+            Object.keys(agendaDia).forEach((hora) => {
+                if (!horaValida(hora)) {
+                    return;
+                }
+                const valorSlot = agendaDia[hora];
+                if (typeof valorSlot === 'boolean') {
+                    if (valorSlot) {
+                        disponiveis.add(hora);
+                    }
+                    return;
+                }
+
+                const slot = normalizarSlotAgenda(valorSlot);
+                if (slot.disponivel && !slot.clienteNome) {
+                    disponiveis.add(hora);
+                }
+            });
+            return Array.from(disponiveis).sort();
+        }
+
+        return [];
+    }
+
+    function normalizarServico(item) {
+        if (!item || typeof item !== 'object') {
+            return null;
+        }
+        const nome = String(item.nome || '').trim();
+        if (!nome) {
+            return null;
+        }
+        return {
+            nome,
+            preco: parseMoeda(item.preco),
+            tempo: String(item.tempo || '-'),
+        };
+    }
+
+    function obterServicosPrestador() {
+        const tabela = Array.isArray(prestadorAtual?.tabelaServicos)
+            ? prestadorAtual.tabelaServicos.map(normalizarServico).filter(Boolean)
+            : [];
+
+        if (tabela.length) {
+            return tabela;
+        }
+
+        if (Array.isArray(prestadorAtual?.servicosOferecidos)) {
+            return prestadorAtual.servicosOferecidos
+                .map((nome) => ({ nome: String(nome || '').trim(), preco: 0, tempo: '-' }))
+                .filter((item) => item.nome);
+        }
+
+        return [];
+    }
+
+    function obterQuantidadeSolicitada(index) {
+        const campo = document.getElementById(`qtdServico_${index}`);
+        const valor = Number(campo?.value);
+        if (!Number.isFinite(valor) || valor <= 0) {
+            return 1;
+        }
+        return Math.floor(valor);
+    }
+
+    function adicionarServicoCarrinho(index) {
+        const servico = servicosDisponiveis[index];
+        if (!servico) {
+            return;
+        }
+        const quantidade = obterQuantidadeSolicitada(index);
+        carrinho.push({
+            nome: servico.nome,
+            precoUnitario: servico.preco,
+            tempo: servico.tempo,
+            quantidade,
+        });
+        renderizarCarrinho();
+    }
+
+    function removerItemCarrinho(index) {
+        carrinho.splice(index, 1);
+        renderizarCarrinho();
+    }
+
+    function renderizarTabelaServicos() {
+        const corpo = document.getElementById('tabelaServicosAgendamento');
+        if (!corpo) {
+            return;
+        }
+
+        servicosDisponiveis = obterServicosPrestador();
+        corpo.innerHTML = '';
+
+        if (!servicosDisponiveis.length) {
+            corpo.innerHTML = '<tr><td colspan="5">Este prestador ainda não cadastrou serviços.</td></tr>';
+            return;
+        }
+
+        servicosDisponiveis.forEach((servico, index) => {
+            corpo.innerHTML += `
+                <tr>
+                    <td>${servico.nome}</td>
+                    <td>${formatarMoeda(servico.preco)}</td>
+                    <td>${servico.tempo}</td>
+                    <td><input class="qtd-servico" type="number" id="qtdServico_${index}" min="1" step="1" value="1"></td>
+                    <td><button class="btn-add" type="button" onclick="adicionarServicoCarrinho(${index})">ADICIONAR</button></td>
+                </tr>
+            `;
+        });
+    }
+
+    function obterDistanciaKm() {
+        const campo = document.getElementById('distanciaKm');
+        const valor = Number(campo?.value);
+        if (!Number.isFinite(valor) || valor < 0) {
+            return 0;
+        }
+        return valor;
+    }
+
+    function calcularSubtotalServicos() {
+        return carrinho.reduce((acc, item) => acc + (item.precoUnitario * item.quantidade), 0);
+    }
+
+    function calcularTaxaDeslocamento() {
+        const local = obterLocalPrestacaoSelecionado();
+        if (local !== 'domicilio') {
+            return 0;
+        }
+        const distancia = obterDistanciaKm();
+        return distancia * TAXA_DESLOCAMENTO_POR_KM_TRECHO * 2;
+    }
+
+    function atualizarEstadoCampoDistancia() {
+        const campo = document.getElementById('distanciaKm');
+        const campoOrigem = document.getElementById('origemDeslocamento');
+        const campoDestino = document.getElementById('destinoDeslocamento');
+        const botaoMaps = document.getElementById('btnCalcularMaps');
+        if (!campo) {
+            return;
+        }
+        const local = obterLocalPrestacaoSelecionado();
+        const habilitado = local === 'domicilio';
+        campo.disabled = true;
+        if (campoOrigem) {
+            campoOrigem.disabled = !habilitado;
+        }
+        if (campoDestino) {
+            campoDestino.disabled = !habilitado;
+        }
+        if (botaoMaps) {
+            botaoMaps.disabled = !habilitado;
+        }
+
+        if (!habilitado) {
+            campo.value = '0';
+            distanciaCalculadaViaMaps = false;
+            atualizarStatusMaps('Para serviço na empresa não há cobrança de deslocamento.');
+        } else if (!distanciaCalculadaViaMaps) {
+            atualizarStatusMaps('Clique em CALCULAR DISTÂNCIA (GOOGLE MAPS) para obter a distância de ida.');
+        }
+    }
+
+    async function calcularDistanciaNoGoogleMaps() {
+        const local = obterLocalPrestacaoSelecionado();
+        if (local !== 'domicilio') {
+            atualizarStatusMaps('O cálculo de deslocamento só é necessário para atendimento a domicílio.');
+            return;
+        }
+
+        const campoOrigem = document.getElementById('origemDeslocamento');
+        const campoDestino = document.getElementById('destinoDeslocamento');
+        const campoKm = document.getElementById('distanciaKm');
+        const botao = document.getElementById('btnCalcularMaps');
+        const origem = String(campoOrigem?.value || '').trim();
+        const destino = String(campoDestino?.value || '').trim();
+
+        if (!origem || !destino) {
+            atualizarStatusMaps('Preencha origem e destino para calcular no Google Maps.', true);
+            return;
+        }
+
+        try {
+            if (botao) {
+                botao.disabled = true;
+                botao.textContent = 'CALCULANDO...';
+            }
+            atualizarStatusMaps('Consultando rota no Google Maps...');
+            await carregarGoogleMapsApi();
+
+            const distanciaMetros = await new Promise((resolve, reject) => {
+                const service = new google.maps.DistanceMatrixService();
+                service.getDistanceMatrix({
+                    origins: [origem],
+                    destinations: [destino],
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    unitSystem: google.maps.UnitSystem.METRIC,
+                }, (response, status) => {
+                    if (status !== 'OK') {
+                        reject(new Error('falha_distance_matrix'));
+                        return;
+                    }
+
+                    const element = response?.rows?.[0]?.elements?.[0];
+                    if (!element || element.status !== 'OK') {
+                        reject(new Error('rota_indisponivel'));
+                        return;
+                    }
+
+                    resolve(Number(element.distance?.value || 0));
+                });
+            });
+
+            const kmIda = distanciaMetros / 1000;
+            if (campoKm) {
+                campoKm.value = kmIda.toFixed(1);
+            }
+
+            distanciaCalculadaViaMaps = true;
+            const kmIdaVolta = kmIda * 2;
+            atualizarStatusMaps(`Distância calculada: ${kmIda.toFixed(1)} km (ida) | ${kmIdaVolta.toFixed(1)} km (ida e volta).`);
+            renderizarCarrinho();
+        } catch (error) {
+            console.error('Erro ao calcular distância no Google Maps:', error);
+            distanciaCalculadaViaMaps = false;
+            if (String(error?.message || '') === 'api_key_ausente') {
+                atualizarStatusMaps('Configure a chave Google Maps em localStorage["myhair_google_maps_api_key"] para calcular a distância automaticamente.', true);
+            } else {
+                atualizarStatusMaps('Não foi possível calcular a distância no Google Maps. Verifique os endereços e tente novamente.', true);
+            }
+            renderizarCarrinho();
+        } finally {
+            if (botao) {
+                botao.disabled = false;
+                botao.textContent = 'CALCULAR DISTÂNCIA (GOOGLE MAPS)';
+            }
+        }
+    }
+
+    function renderizarCarrinho() {
+        const lista = document.getElementById('itensCarrinho');
+        const subtotalEl = document.getElementById('subtotalServicos');
+        const deslocamentoEl = document.getElementById('valorDeslocamento');
+        const totalEl = document.getElementById('valorTotalCarrinho');
+        if (!lista || !subtotalEl || !deslocamentoEl || !totalEl) {
+            return;
+        }
+
+        if (!carrinho.length) {
+            lista.innerHTML = '<p class="vazio-carrinho">Nenhum serviço adicionado.</p>';
+        } else {
+            lista.innerHTML = carrinho.map((item, index) => `
+                <div class="item-carrinho">
+                    <div>
+                        <strong>${item.nome}</strong><br>
+                        <span>${item.quantidade} x ${formatarMoeda(item.precoUnitario)}</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <strong>${formatarMoeda(item.precoUnitario * item.quantidade)}</strong><br>
+                        <button type="button" class="btn-remover" onclick="removerItemCarrinho(${index})">REMOVER</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        const subtotal = calcularSubtotalServicos();
+        const deslocamento = calcularTaxaDeslocamento();
+        const total = subtotal + deslocamento;
+
+        subtotalEl.textContent = formatarMoeda(subtotal);
+        deslocamentoEl.textContent = formatarMoeda(deslocamento);
+        totalEl.textContent = formatarMoeda(total);
     }
 
     function obterLocaisPrestacaoCompat(registro) {
@@ -198,6 +670,8 @@
             checkEmpresa.checked = true;
             checkDomicilio.checked = false;
             status.textContent = 'Este parceiro atende apenas na empresa.';
+            atualizarEstadoCampoDistancia();
+            renderizarCarrinho();
             return;
         }
 
@@ -205,6 +679,8 @@
             checkEmpresa.checked = false;
             checkDomicilio.checked = true;
             status.textContent = 'Este parceiro atende apenas a domicílio.';
+            atualizarEstadoCampoDistancia();
+            renderizarCarrinho();
             return;
         }
 
@@ -215,6 +691,8 @@
             checkDomicilio.checked = false;
         }
         status.textContent = 'Selecione onde será realizado o serviço.';
+        atualizarEstadoCampoDistancia();
+        renderizarCarrinho();
     }
 
     function configurarExclusividadeLocais() {
@@ -232,6 +710,8 @@
             if (!checkEmpresa.checked && !checkDomicilio.checked) {
                 status.textContent = 'Selecione um local: empresa ou domicílio.';
             }
+            atualizarEstadoCampoDistancia();
+            renderizarCarrinho();
         });
 
         checkDomicilio.addEventListener('change', () => {
@@ -241,6 +721,8 @@
             if (!checkEmpresa.checked && !checkDomicilio.checked) {
                 status.textContent = 'Selecione um local: empresa ou domicílio.';
             }
+            atualizarEstadoCampoDistancia();
+            renderizarCarrinho();
         });
     }
 
@@ -309,12 +791,17 @@
         const painel = document.getElementById('painelStatusSolicitacao');
         const badge = document.getElementById('badgeStatusSolicitacao');
         const mensagem = document.getElementById('statusMensagemSolicitacao');
-        if (!painel || !badge || !mensagem) {
+        const resumo = document.getElementById('resumoFinanceiroSolicitacao');
+        const resumoSubtotal = document.getElementById('resumoSubtotalServicos');
+        const resumoTaxa = document.getElementById('resumoTaxaDeslocamento');
+        const resumoTotal = document.getElementById('resumoValorTotal');
+        if (!painel || !badge || !mensagem || !resumo || !resumoSubtotal || !resumoTaxa || !resumoTotal) {
             return;
         }
 
         if (!dados) {
             painel.style.display = 'none';
+            resumo.style.display = 'none';
             return;
         }
 
@@ -322,6 +809,20 @@
         badge.className = `badge-status ${status}`;
         badge.textContent = status;
         mensagem.textContent = mapearStatusMensagem(status, dados.mensagemPrestador);
+
+        const subtotal = Number(dados.subtotalServicos);
+        const deslocamento = Number(dados.taxaDeslocamento);
+        const total = Number(dados.valorTotal);
+        const mostrarResumo = Number.isFinite(total) || Number.isFinite(subtotal) || Number.isFinite(deslocamento);
+        if (mostrarResumo) {
+            resumoSubtotal.textContent = formatarMoeda(Number.isFinite(subtotal) ? subtotal : 0);
+            resumoTaxa.textContent = formatarMoeda(Number.isFinite(deslocamento) ? deslocamento : 0);
+            resumoTotal.textContent = formatarMoeda(Number.isFinite(total) ? total : 0);
+            resumo.style.display = 'block';
+        } else {
+            resumo.style.display = 'none';
+        }
+
         painel.style.display = 'block';
     }
 
@@ -389,7 +890,11 @@
             if (!snap.empty) {
                 const doc = snap.docs[0];
                 const dados = doc.data();
-                clienteAtual = { id: doc.id, nome: dados.nome || usuarioAuth.email || 'Cliente' };
+                clienteAtual = {
+                    id: doc.id,
+                    nome: dados.nome || usuarioAuth.email || 'Cliente',
+                    enderecoCompleto: montarEnderecoCompleto(dados),
+                };
                 return;
             }
         }
@@ -398,12 +903,33 @@
             const doc = await db.collection('clientes').doc(idLocal).get();
             if (doc.exists) {
                 const dados = doc.data();
-                clienteAtual = { id: doc.id, nome: dados.nome || 'Cliente' };
+                clienteAtual = {
+                    id: doc.id,
+                    nome: dados.nome || 'Cliente',
+                    enderecoCompleto: montarEnderecoCompleto(dados),
+                };
                 return;
             }
         }
 
         clienteAtual = { id: 'anonimo', nome: usuarioAuth?.email || 'Cliente' };
+    }
+
+    function preencherEnderecosDeslocamento() {
+        const origem = document.getElementById('origemDeslocamento');
+        const destino = document.getElementById('destinoDeslocamento');
+        if (!origem || !destino) {
+            return;
+        }
+
+        const enderecoPrestador = montarEnderecoCompleto(prestadorAtual);
+        if (!origem.value.trim() && enderecoPrestador) {
+            origem.value = enderecoPrestador;
+        }
+
+        if (!destino.value.trim() && clienteAtual?.enderecoCompleto) {
+            destino.value = clienteAtual.enderecoCompleto;
+        }
     }
 
     async function carregarPrestador() {
@@ -426,7 +952,9 @@
         const nome = prestadorAtual?.fantasia || prestadorAtual?.nome || decodeURIComponent(prestadorNomeParam || 'Prestador');
         document.getElementById('nomePrestador').textContent = nome;
         document.getElementById('idPrestador').textContent = `ID: ${prestadorAtual?.idSistema || prestadorAtual?.idDoc || prestadorId}`;
+        preencherEnderecosDeslocamento();
         atualizarLocaisPrestacaoUI();
+        renderizarTabelaServicos();
     }
 
     function listarHorariosDisponiveis() {
@@ -442,13 +970,15 @@
             return;
         }
 
-        const agendaDia = prestadorAtual.agenda?.[data] || {};
-        const horarios = Object.keys(agendaDia)
-            .sort()
-            .filter((hora) => {
-                const slot = normalizarSlotAgenda(agendaDia[hora]);
-                return slot.disponivel && !slot.clienteNome;
-            });
+        const agendaDia = prestadorAtual.agenda?.[data];
+        const horarios = obterHorariosDisponiveisDia(agendaDia);
+
+        if (!horarios.length) {
+            const semAgendaNoDia = !agendaDia || (typeof agendaDia === 'object' && !Array.isArray(agendaDia) && Object.keys(agendaDia).length === 0);
+            if (semAgendaNoDia) {
+                gerarHorariosPadrao().forEach((hora) => horarios.push(hora));
+            }
+        }
 
         if (!horarios.length) {
             status.textContent = 'Não há horários disponíveis nessa data.';
@@ -495,6 +1025,11 @@
             return;
         }
 
+        if (!carrinho.length) {
+            alert('Adicione pelo menos um serviço ao carrinho antes de agendar.');
+            return;
+        }
+
         const locaisPrestador = obterLocaisPrestacaoCompat(prestadorAtual);
         if (localPrestacao === 'empresa' && !locaisPrestador.empresa) {
             alert('Este parceiro só presta serviços a domicilio.');
@@ -504,6 +1039,16 @@
             alert('Este parceiro só presta serviços na empresa.');
             return;
         }
+
+        if (localPrestacao === 'domicilio' && !distanciaCalculadaViaMaps) {
+            alert('Calcule a distância no Google Maps antes de solicitar agendamento a domicílio.');
+            return;
+        }
+
+        const distanciaKm = localPrestacao === 'domicilio' ? obterDistanciaKm() : 0;
+        const subtotalServicos = calcularSubtotalServicos();
+        const taxaDeslocamento = calcularTaxaDeslocamento();
+        const valorTotal = subtotalServicos + taxaDeslocamento;
 
         const docId = `sol_${sanitizarId(clienteAtual.id)}__${sanitizarId(prestadorId)}__${data.replace(/-/g, '')}_${horaSelecionada.replace(':', '')}`;
         const ref = db.collection('solicitacoes_agendamento').doc(docId);
@@ -523,6 +1068,12 @@
             clienteId: clienteAtual.id,
             clienteNome: clienteAtual.nome,
             localPrestacao,
+            carrinhoServicos: carrinho,
+            subtotalServicos,
+            taxaDeslocamento,
+            distanciaKm,
+            distanciaFonte: localPrestacao === 'domicilio' ? 'google_maps' : 'nao_aplicavel',
+            valorTotal,
             data,
             hora: horaSelecionada,
             status: 'pendente',
@@ -532,7 +1083,13 @@
 
         solicitacaoAtualId = docId;
         monitorarSolicitacao(solicitacaoAtualId);
-        renderizarStatusSolicitacao({ status: 'pendente', mensagemPrestador: 'Aguardando resposta do prestador.' });
+        renderizarStatusSolicitacao({
+            status: 'pendente',
+            mensagemPrestador: 'Aguardando resposta do prestador.',
+            subtotalServicos,
+            taxaDeslocamento,
+            valorTotal,
+        });
         alert('Serviço agendado com sucesso.');
     }
 
@@ -540,7 +1097,22 @@
         document.getElementById('dataAgendamento').value = hojeISO();
         document.getElementById('dataAgendamento').addEventListener('change', listarHorariosDisponiveis);
         document.getElementById('btnConfirmar').addEventListener('click', solicitarAgendamento);
+        document.getElementById('btnCalcularMaps').addEventListener('click', calcularDistanciaNoGoogleMaps);
+        document.getElementById('origemDeslocamento').addEventListener('input', () => {
+            distanciaCalculadaViaMaps = false;
+            document.getElementById('distanciaKm').value = '0';
+            atualizarStatusMaps('Endereço alterado. Recalcule a distância no Google Maps.');
+            renderizarCarrinho();
+        });
+        document.getElementById('destinoDeslocamento').addEventListener('input', () => {
+            distanciaCalculadaViaMaps = false;
+            document.getElementById('distanciaKm').value = '0';
+            atualizarStatusMaps('Endereço alterado. Recalcule a distância no Google Maps.');
+            renderizarCarrinho();
+        });
         configurarExclusividadeLocais();
+        atualizarEstadoCampoDistancia();
+        renderizarCarrinho();
 
         await identificarClienteAtual();
         atualizarIndicadorModoDev();

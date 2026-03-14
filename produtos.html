@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Produtos</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
@@ -16,14 +17,34 @@
         h1 { margin: 0; font-size: 24px; }
         .btn-voltar { text-decoration: none; border: 1px solid #f2dfb8; background: #fff7e8; color: #8a5a00; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; }
         .sub { font-size: 14px; color: #5e707f; margin: 0 0 12px; }
+        .layout { display: grid; grid-template-columns: 1.35fr 1fr; gap: 12px; }
+        .bloco { border: 1px solid #eceff3; border-radius: 12px; padding: 12px; background: #fbfdff; }
+        .bloco h2 { margin: 0 0 10px; font-size: 16px; color: #4a3111; }
         table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
         th { text-align: left; background: #fff9ef; color: #7a5417; padding: 10px; font-size: 13px; }
         td { padding: 10px; border-top: 1px solid #edf1f4; font-size: 13px; }
+        .qtd { width: 64px; padding: 6px; border: 1px solid #dacfb9; border-radius: 8px; }
+        .btn-add { border: 1px solid #f0d8ad; background: #fff6e6; color: #7b4d05; border-radius: 8px; padding: 7px 9px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .itens-carrinho { min-height: 42px; }
+        .item-carrinho { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #eadfcb; padding: 7px 0; font-size: 12px; }
+        .item-carrinho:last-child { border-bottom: none; }
+        .btn-remover { border: none; background: transparent; color: #a2352a; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .linha-total { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; color: #5a4424; }
+        .linha-total.total { font-size: 15px; color: #3f2a08; font-weight: bold; border-top: 1px solid #e9dcc7; padding-top: 8px; }
+        .retirada-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
+        .btn-retirada { border: 1px solid #e6d2ad; background: #fff9f0; color: #6f4b11; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-retirada.ativo { background: #ffe6bd; border-color: #d99f4e; color: #5d3906; }
+        .btn-retirada:disabled { opacity: 0.45; cursor: not-allowed; }
+        .retirada-selecionada { margin: 8px 0 0; font-size: 12px; color: #6a512d; }
+        .btn-enviar { width: 100%; margin-top: 10px; border: 1px solid #d59a47; background: #ffc771; color: #5f3900; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-enviar:disabled { opacity: 0.5; cursor: not-allowed; }
+        .status-compra { margin: 8px 0 0; font-size: 12px; color: #6a512d; min-height: 16px; }
         .vazio { color: #6d7d8b; font-size: 13px; margin: 10px 0 0; }
 
         @media (max-width: 720px) {
             body { padding: 12px; }
             .card { padding: 14px; }
+            .layout { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -35,7 +56,28 @@
             <a href="visaogeral.html" class="btn-voltar">VOLTAR</a>
         </div>
         <p id="subtitulo" class="sub">Carregando dados do prestador...</p>
-        <div id="conteudo"></div>
+        <div class="layout">
+            <div class="bloco">
+                <h2>Tabela de preços</h2>
+                <div id="conteudo"></div>
+            </div>
+            <div class="bloco">
+                <h2>Carrinho</h2>
+                <div id="itensCarrinho" class="itens-carrinho"></div>
+                <div class="linha-total"><span>Subtotal</span><strong id="subtotalCarrinho">R$ 0,00</strong></div>
+                <div class="linha-total total"><span>Total</span><strong id="totalCarrinho">R$ 0,00</strong></div>
+
+                <h2 style="margin-top:14px;">Forma de retirada</h2>
+                <div class="retirada-opcoes">
+                    <button type="button" class="btn-retirada" id="btnRetiradaEmpresa" onclick="selecionarRetirada('empresa')">Na empresa</button>
+                    <button type="button" class="btn-retirada" id="btnRetiradaEntrega" onclick="selecionarRetirada('entrega')">Entrega</button>
+                    <button type="button" class="btn-retirada" id="btnRetiradaTransportadora" onclick="selecionarRetirada('transportadora')">Despacho por transportadora</button>
+                </div>
+                <p id="retiradaSelecionada" class="retirada-selecionada">Selecione a forma de retirada do produto.</p>
+                <button type="button" id="btnEnviarCompra" class="btn-enviar" onclick="enviarCompra()" disabled>ENVIAR COMPRA</button>
+                <p id="statusCompra" class="status-compra"></p>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -53,13 +95,24 @@
         firebase.initializeApp(firebaseConfig);
     }
 
+    const auth = firebase.auth();
     const db = firebase.firestore();
     const params = new URLSearchParams(window.location.search);
     const prestadorId = params.get('prestadorId') || '';
     const prestadorNome = params.get('prestadorNome') ? decodeURIComponent(params.get('prestadorNome')) : 'Prestador';
-    const modoDesenvolvedorAtivo = params.get('dev') === '1'
-        || params.get('modo') === 'dev'
-        || localStorage.getItem('myhair_modo_dev') === '1';
+
+    function flagDevAtiva(valor) {
+        const texto = String(valor || '').trim().toLowerCase();
+        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
+    }
+
+    const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
+        || flagDevAtiva(params.get('modo'))
+        || flagDevAtiva(localStorage.getItem('myhair_modo_dev'));
+    let carrinho = [];
+    let retiradaSelecionada = '';
+    let formasRetiradaDisponiveis = ['empresa', 'entrega', 'transportadora'];
+    let clienteAtual = { id: 'anonimo', nome: 'Cliente' };
 
     function estaEmModoDesenvolvedor() {
         return modoDesenvolvedorAtivo;
@@ -73,6 +126,280 @@
         }
     }
 
+    function parseMoeda(valor) {
+        if (typeof valor === 'number') {
+            return Number.isFinite(valor) ? valor : 0;
+        }
+        const limpo = String(valor || '')
+            .replace(/\s/g, '')
+            .replace(/\./g, '')
+            .replace(',', '.')
+            .replace(/[^\d.-]/g, '');
+        const numero = Number(limpo);
+        return Number.isFinite(numero) ? numero : 0;
+    }
+
+    function formatarMoeda(valor) {
+        return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
+    }
+
+    function normalizarProduto(item) {
+        if (!item || typeof item !== 'object') {
+            return null;
+        }
+        const nome = String(item.nome || '').trim();
+        if (!nome) {
+            return null;
+        }
+        return {
+            nome,
+            estoque: String(item.estoque || '-'),
+            preco: parseMoeda(item.preco),
+        };
+    }
+
+    function obterQuantidade(index) {
+        const campo = document.getElementById(`qtdProduto_${index}`);
+        const valor = Number(campo?.value);
+        if (!Number.isFinite(valor) || valor <= 0) {
+            return 1;
+        }
+        return Math.floor(valor);
+    }
+
+    function adicionarCarrinho(index) {
+        const produto = produtosCarregados[index];
+        if (!produto) {
+            return;
+        }
+        const quantidade = obterQuantidade(index);
+        carrinho.push({
+            nome: produto.nome,
+            precoUnitario: produto.preco,
+            quantidade,
+        });
+        renderizarCarrinho();
+    }
+
+    function removerCarrinho(index) {
+        carrinho.splice(index, 1);
+        renderizarCarrinho();
+    }
+
+    function totalCarrinho() {
+        return carrinho.reduce((acc, item) => acc + item.precoUnitario * item.quantidade, 0);
+    }
+
+    function atualizarEstadoBotaoCompra() {
+        const botao = document.getElementById('btnEnviarCompra');
+        if (!botao) {
+            return;
+        }
+        botao.disabled = !(carrinho.length > 0 && retiradaSelecionada);
+    }
+
+    function renderizarCarrinho() {
+        const lista = document.getElementById('itensCarrinho');
+        const subtotal = document.getElementById('subtotalCarrinho');
+        const total = document.getElementById('totalCarrinho');
+        if (!lista || !subtotal || !total) {
+            return;
+        }
+
+        if (!carrinho.length) {
+            lista.innerHTML = '<p class="vazio">Nenhum produto no carrinho.</p>';
+        } else {
+            lista.innerHTML = carrinho.map((item, index) => `
+                <div class="item-carrinho">
+                    <div>
+                        <strong>${item.nome}</strong><br>
+                        <span>${item.quantidade} x ${formatarMoeda(item.precoUnitario)}</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <strong>${formatarMoeda(item.precoUnitario * item.quantidade)}</strong><br>
+                        <button type="button" class="btn-remover" onclick="removerCarrinho(${index})">REMOVER</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        const valor = totalCarrinho();
+        subtotal.textContent = formatarMoeda(valor);
+        total.textContent = formatarMoeda(valor);
+        atualizarEstadoBotaoCompra();
+    }
+
+    function textoRetirada(valor) {
+        if (valor === 'empresa') return 'Na empresa';
+        if (valor === 'entrega') return 'Entrega';
+        if (valor === 'transportadora') return 'Despacho por transportadora';
+        return '-';
+    }
+
+    function selecionarRetirada(valor) {
+        if (!formasRetiradaDisponiveis.includes(valor)) {
+            return;
+        }
+        retiradaSelecionada = valor;
+        ['empresa', 'entrega', 'transportadora'].forEach((opcao) => {
+            const botao = document.getElementById(`btnRetirada${opcao.charAt(0).toUpperCase()}${opcao.slice(1)}`);
+            if (botao) {
+                botao.classList.toggle('ativo', opcao === valor);
+            }
+        });
+        const texto = document.getElementById('retiradaSelecionada');
+        if (texto) {
+            texto.textContent = `Forma selecionada: ${textoRetirada(valor)}.`;
+        }
+        atualizarEstadoBotaoCompra();
+    }
+
+    function aplicarFormasRetirada(opcoes) {
+        formasRetiradaDisponiveis = Array.isArray(opcoes) && opcoes.length
+            ? opcoes
+            : ['empresa', 'entrega', 'transportadora'];
+
+        const mapa = {
+            empresa: document.getElementById('btnRetiradaEmpresa'),
+            entrega: document.getElementById('btnRetiradaEntrega'),
+            transportadora: document.getElementById('btnRetiradaTransportadora'),
+        };
+
+        Object.entries(mapa).forEach(([chave, botao]) => {
+            if (!botao) return;
+            const habilitado = formasRetiradaDisponiveis.includes(chave);
+            botao.disabled = !habilitado;
+            botao.classList.toggle('ativo', false);
+        });
+
+        retiradaSelecionada = '';
+        if (formasRetiradaDisponiveis.length) {
+            selecionarRetirada(formasRetiradaDisponiveis[0]);
+        }
+        atualizarEstadoBotaoCompra();
+    }
+
+    function normalizarFormasRetirada(lista) {
+        if (!Array.isArray(lista)) {
+            return [];
+        }
+        const aceitas = new Set(['empresa', 'entrega', 'transportadora']);
+        return Array.from(new Set(lista.map((item) => String(item || '').toLowerCase().trim())))
+            .filter((item) => aceitas.has(item));
+    }
+
+    let produtosCarregados = [];
+
+    async function identificarClienteAtual() {
+        const usuarioAuth = auth.currentUser;
+        const idLocal = localStorage.getItem('usuarioID') || '';
+
+        if (!usuarioAuth?.email && !idLocal) {
+            clienteAtual = { id: 'anonimo', nome: 'Cliente' };
+            return;
+        }
+
+        if (usuarioAuth?.email) {
+            const snap = await db.collection('clientes').where('email', '==', usuarioAuth.email).limit(1).get();
+            if (!snap.empty) {
+                const doc = snap.docs[0];
+                const dados = doc.data();
+                clienteAtual = { id: doc.id, nome: dados.nome || usuarioAuth.email || 'Cliente' };
+                return;
+            }
+        }
+
+        if (idLocal) {
+            const doc = await db.collection('clientes').doc(idLocal).get();
+            if (doc.exists) {
+                const dados = doc.data();
+                clienteAtual = { id: doc.id, nome: dados.nome || 'Cliente' };
+                return;
+            }
+            clienteAtual = { id: idLocal, nome: usuarioAuth?.email || 'Cliente' };
+            return;
+        }
+
+        clienteAtual = { id: 'anonimo', nome: usuarioAuth?.email || 'Cliente' };
+    }
+
+    function sanitizarId(valor) {
+        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    async function enviarCompra() {
+        const status = document.getElementById('statusCompra');
+        const botao = document.getElementById('btnEnviarCompra');
+
+        if (!prestadorId) {
+            alert('Prestador não informado para envio da compra.');
+            return;
+        }
+
+        if (!carrinho.length) {
+            alert('Adicione pelo menos um produto ao carrinho.');
+            return;
+        }
+
+        if (!retiradaSelecionada) {
+            alert('Selecione a forma de retirada.');
+            return;
+        }
+
+        if (clienteAtual.id === 'anonimo') {
+            alert('Faça login como cliente para enviar a compra.');
+            return;
+        }
+
+        try {
+            if (status) {
+                status.textContent = 'Enviando pedido...';
+            }
+            if (botao) {
+                botao.disabled = true;
+            }
+
+            const total = totalCarrinho();
+            const itens = carrinho.map((item) => ({
+                nome: item.nome,
+                quantidade: item.quantidade,
+                precoUnitario: item.precoUnitario,
+                subtotal: item.precoUnitario * item.quantidade,
+            }));
+
+            const idCompra = `comp_${sanitizarId(clienteAtual.id)}__${sanitizarId(prestadorId)}__${Date.now()}`;
+
+            await db.collection('solicitacoes_compra_produtos').doc(idCompra).set({
+                idCompra,
+                prestadorId,
+                prestadorNome,
+                clienteId: clienteAtual.id,
+                clienteNome: clienteAtual.nome,
+                retirada: retiradaSelecionada,
+                retiradaLabel: textoRetirada(retiradaSelecionada),
+                itens,
+                total,
+                status: 'pendente',
+                criadoEm: new Date().toISOString(),
+            }, { merge: true });
+
+            carrinho = [];
+            renderizarCarrinho();
+            if (status) {
+                status.textContent = 'Compra enviada com sucesso para o prestador.';
+            }
+            alert('Compra enviada com sucesso.');
+        } catch (error) {
+            console.error('Erro ao enviar compra:', error);
+            if (status) {
+                status.textContent = 'Erro ao enviar compra. Tente novamente.';
+            }
+            alert('Erro ao enviar compra.');
+        } finally {
+            atualizarEstadoBotaoCompra();
+        }
+    }
+
     function renderizarTabela(produtos) {
         const conteudo = document.getElementById('conteudo');
         if (!Array.isArray(produtos) || !produtos.length) {
@@ -80,18 +407,20 @@
             return;
         }
 
-        const linhas = produtos.map((produto) => `
+        const linhas = produtos.map((produto, index) => `
             <tr>
                 <td>${produto.nome || '-'}</td>
                 <td>${produto.estoque || '-'}</td>
-                <td>R$ ${produto.preco || '-'}</td>
+                <td>${formatarMoeda(produto.preco)}</td>
+                <td><input type="number" class="qtd" id="qtdProduto_${index}" min="1" step="1" value="1"></td>
+                <td><button type="button" class="btn-add" onclick="adicionarCarrinho(${index})">COLOCAR NO CARRINHO</button></td>
             </tr>
         `).join('');
 
         conteudo.innerHTML = `
             <table>
                 <thead>
-                    <tr><th>Produto</th><th>Estoque</th><th>Preço</th></tr>
+                    <tr><th>Produto</th><th>Estoque</th><th>Preço</th><th>Qtd</th><th>Ação</th></tr>
                 </thead>
                 <tbody>${linhas}</tbody>
             </table>
@@ -123,12 +452,15 @@
         }
 
         const produtos = Array.isArray(registro.tabelaProdutos) && registro.tabelaProdutos.length
-            ? registro.tabelaProdutos
+            ? registro.tabelaProdutos.map(normalizarProduto).filter(Boolean)
             : (Array.isArray(registro.produtosVenda)
-                ? registro.produtosVenda.map((produto) => ({ nome: produto, estoque: '-', preco: '-' }))
+                ? registro.produtosVenda.map((produto) => ({ nome: produto, estoque: '-', preco: 0 }))
                 : []);
 
+        produtosCarregados = produtos;
+        aplicarFormasRetirada(normalizarFormasRetirada(registro.formasRetirada));
         renderizarTabela(produtos);
+        renderizarCarrinho();
     }
 
     aplicarProtecaoConteudo();
@@ -141,9 +473,13 @@
         });
     });
 
-    carregar().catch((error) => {
-        console.error(error);
-        document.getElementById('conteudo').innerHTML = '<p class="vazio">Erro ao carregar produtos.</p>';
+    auth.onAuthStateChanged(() => {
+        identificarClienteAtual()
+            .then(() => carregar())
+            .catch((error) => {
+                console.error(error);
+                document.getElementById('conteudo').innerHTML = '<p class="vazio">Erro ao carregar produtos.</p>';
+            });
     });
 </script>
 </body>

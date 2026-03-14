@@ -14,6 +14,8 @@
         .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
         .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
         header { padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+        .topo-acoes { display: flex; justify-content: flex-end; margin-bottom: 8px; }
+        .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 8px; padding: 7px 11px; font-size: 10px; font-weight: bold; }
         
         /* Dados Básicos */
         .perfil-resumo { background: #fff; margin: 0 0 12px; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 8px; box-shadow: inset 0 0 0 1px #f1f1f1; }
@@ -26,6 +28,13 @@
         .status-acesso { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 4px 8px; border-radius: 999px; background: #f5f7fa; color: #4d5c69; font-size: 10px; font-weight: bold; }
         .status-acesso.dev { background: #fff3cd; color: #7a5a00; }
         .status-acesso.owner { background: #e7f8ed; color: #1c7b3a; }
+        .card-avaliacao { background: #fffdf4; margin: 0 0 12px; padding: 10px; border-radius: 10px; border: 1px solid #f6e7b2; }
+        .card-avaliacao h4 { margin: 0 0 8px; font-size: 12px; color: #6e5700; }
+        .linha-estrelas { display: flex; align-items: center; gap: 4px; }
+        .estrela { border: none; background: transparent; padding: 2px; font-size: 20px; line-height: 1; cursor: pointer; color: #d7d7d7; }
+        .estrela.ativa { color: #f5b301; }
+        .estrela:disabled { cursor: not-allowed; opacity: 0.6; }
+        .avaliacao-info { margin-top: 6px; font-size: 10px; color: #6b5f36; }
 
         /* Menu Deslizante (Tabs) */
         .menu-tabs { display: flex; background: #fff; overflow-x: auto; margin-bottom: 8px; border-radius: 10px; box-shadow: inset 0 0 0 1px #f1f1f1; }
@@ -57,6 +66,7 @@
         .item-solicitacao { border-bottom: 1px solid #e9eef3; padding: 8px 0; }
         .item-solicitacao:last-child { border-bottom: none; }
         .item-solicitacao p { margin: 2px 0; font-size: 11px; color: #4d5c69; }
+        .item-solicitacao .linha-itens { margin-top: 5px; font-size: 10px; color: #667888; }
         .acoes-solicitacao { display: flex; gap: 6px; margin-top: 6px; }
         .btn-solicitacao { flex: 1; border: none; border-radius: 8px; font-size: 10px; font-weight: bold; padding: 7px 8px; cursor: pointer; }
         .btn-aceitar { background: #dff4e6; color: #1f6a36; }
@@ -81,6 +91,9 @@
 <div class="page-shell">
     <div class="login-card">
         <header><h1>MY HAIR</h1></header>
+        <div class="topo-acoes">
+            <a id="btnVoltarPerfil" href="visaogeral.html" class="btn-voltar">VOLTAR</a>
+        </div>
 
         <div class="perfil-resumo">
             <div class="avatar" id="avatarLetra">M</div>
@@ -90,6 +103,18 @@
                 <div id="statusAcesso" class="status-acesso">CARREGANDO ACESSO</div>
             </div>
         </div>
+
+        <section class="card-avaliacao">
+            <h4>Avaliação em estrelas</h4>
+            <div id="estrelasAvaliacao" class="linha-estrelas">
+                <button type="button" class="estrela" data-nota="1" onclick="selecionarNotaPerfil(1)">★</button>
+                <button type="button" class="estrela" data-nota="2" onclick="selecionarNotaPerfil(2)">★</button>
+                <button type="button" class="estrela" data-nota="3" onclick="selecionarNotaPerfil(3)">★</button>
+                <button type="button" class="estrela" data-nota="4" onclick="selecionarNotaPerfil(4)">★</button>
+                <button type="button" class="estrela" data-nota="5" onclick="selecionarNotaPerfil(5)">★</button>
+            </div>
+            <div id="textoAvaliacaoPerfil" class="avaliacao-info">Carregando avaliações...</div>
+        </section>
 
         <nav class="menu-tabs">
             <button class="tab-btn active" onclick="openTab(event, 'agenda')">AGENDA</button>
@@ -117,6 +142,11 @@
                 <div id="painelSolicitacoes" class="painel-solicitacoes" style="display:none;">
                     <h3>Solicitações de agendamento</h3>
                     <div id="listaSolicitacoes"><p style="font-size:11px; color:#666; margin:0;">Nenhuma solicitação pendente.</p></div>
+                </div>
+
+                <div id="painelCompras" class="painel-solicitacoes" style="display:none;">
+                    <h3>Solicitações de compra</h3>
+                    <div id="listaCompras"><p style="font-size:11px; color:#666; margin:0;">Nenhuma compra pendente.</p></div>
                 </div>
 
                 <button class="btn-update" onclick="atualizarAgenda()">ATUALIZAR AGENDA</button>
@@ -172,9 +202,15 @@
     const params = new URLSearchParams(window.location.search);
     const idUsuario = params.get('id') || localStorage.getItem('usuarioID') || "MH-NOVO";
     const tipoPerfilQuery = params.get('tipo');
-    const modoDesenvolvedorAtivo = params.get('dev') === '1'
-        || params.get('modo') === 'dev'
-        || localStorage.getItem('myhair_modo_dev') === '1';
+
+    function flagDevAtiva(valor) {
+        const texto = String(valor || '').trim().toLowerCase();
+        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
+    }
+
+    const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
+        || flagDevAtiva(params.get('modo'))
+        || flagDevAtiva(localStorage.getItem('myhair_modo_dev'));
     let registroAtual = null;
     let referenciaAtual = null;
     let tipoPerfilAtual = 'salao';
@@ -188,6 +224,10 @@
     let unsubscribeSolicitacoesTempoReal = null;
     let solicitacoesNotificadas = new Set();
     let solicitacoesSnapshotInicializado = false;
+    let unsubscribeComprasTempoReal = null;
+    let comprasNotificadas = new Set();
+    let comprasSnapshotInicializado = false;
+    let minhaNotaSelecionada = 0;
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
@@ -201,6 +241,10 @@
 
     function atualizarStatusAcesso() {
         const status = document.getElementById('statusAcesso');
+        const voltar = document.getElementById('btnVoltarPerfil');
+        if (voltar) {
+            voltar.href = estaEmModoDesenvolvedor() ? 'visaogeral.html?dev=1' : 'visaogeral.html';
+        }
         if (!status) {
             return;
         }
@@ -249,6 +293,180 @@
     function sanitizarId(valor) {
         return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
     }
+
+    function formatarMoeda(valor) {
+        const numero = Number(valor || 0);
+        return `R$ ${numero.toFixed(2).replace('.', ',')}`;
+    }
+
+    function tipoPerfilNormalizado(tipo) {
+        return tipo === 'cliente' ? 'cliente' : 'salao';
+    }
+
+    function comporAvaliacaoId(deTipo, deId, paraTipo, paraId) {
+        return `aval_${sanitizarId(deTipo)}_${sanitizarId(deId)}__${sanitizarId(paraTipo)}_${sanitizarId(paraId)}`;
+    }
+
+    function usuarioAutenticadoFirebase() {
+        return Boolean(auth.currentUser && auth.currentUser.uid);
+    }
+
+    function atualizarVisualEstrelas(nota) {
+        const estrelas = document.querySelectorAll('#estrelasAvaliacao .estrela');
+        estrelas.forEach((estrela, index) => {
+            estrela.classList.toggle('ativa', index < nota);
+        });
+    }
+
+    function atualizarTextoAvaliacao(media, total, minhaNota, bloqueada, motivo) {
+        const texto = document.getElementById('textoAvaliacaoPerfil');
+        if (!texto) {
+            return;
+        }
+
+        const mediaFormatada = total > 0 ? Number(media).toFixed(1).replace('.', ',') : '-';
+        const suaNota = minhaNota > 0 ? `${minhaNota} estrela${minhaNota > 1 ? 's' : ''}` : 'ainda nao enviada';
+        const base = `Media: ${mediaFormatada} (${total} avaliacao${total === 1 ? '' : 'oes'}) | Sua nota: ${suaNota}`;
+        texto.textContent = bloqueada ? `${base} | ${motivo}` : base;
+    }
+
+    function atualizarBloqueioAvaliacao(bloqueada) {
+        const estrelas = document.querySelectorAll('#estrelasAvaliacao .estrela');
+        estrelas.forEach((estrela) => {
+            estrela.disabled = bloqueada;
+        });
+    }
+
+    async function carregarResumoAvaliacoes() {
+        if (!registroAtual) {
+            return { media: 0, total: 0 };
+        }
+
+        const snap = await db.collection('avaliacoes')
+            .where('paraId', '==', getIdentificadorPerfil())
+            .where('paraTipo', '==', tipoPerfilNormalizado(tipoPerfilAtual))
+            .get();
+
+        let soma = 0;
+        let total = 0;
+        snap.forEach((doc) => {
+            const nota = Number(doc.data()?.nota || 0);
+            if (nota >= 1 && nota <= 5) {
+                soma += nota;
+                total += 1;
+            }
+        });
+
+        return {
+            media: total ? (soma / total) : 0,
+            total,
+        };
+    }
+
+    async function carregarMinhaAvaliacaoPerfil() {
+        const anonimo = !usuarioAutenticadoFirebase();
+        const texto = document.getElementById('textoAvaliacaoPerfil');
+        if (!registroAtual || anonimo) {
+            minhaNotaSelecionada = 0;
+            atualizarVisualEstrelas(0);
+            atualizarBloqueioAvaliacao(true);
+            if (texto && texto.textContent) {
+                texto.textContent += ' | Faça login para avaliar';
+            }
+            return 0;
+        }
+
+        if (getIdentificadorPerfil() === identificadorAtual && tipoPerfilNormalizado(tipoPerfilAtual) === tipoPerfilNormalizado(tipoAtual)) {
+            minhaNotaSelecionada = 0;
+            atualizarVisualEstrelas(0);
+            atualizarBloqueioAvaliacao(true);
+            if (texto && texto.textContent) {
+                texto.textContent += ' | Voce nao pode se autoavaliar';
+            }
+            return 0;
+        }
+
+        const docId = comporAvaliacaoId(tipoPerfilNormalizado(tipoAtual), identificadorAtual, tipoPerfilNormalizado(tipoPerfilAtual), getIdentificadorPerfil());
+        const snap = await db.collection('avaliacoes').doc(docId).get();
+        if (!snap.exists) {
+            minhaNotaSelecionada = 0;
+            atualizarVisualEstrelas(0);
+            atualizarBloqueioAvaliacao(false);
+            return 0;
+        }
+
+        const nota = Number(snap.data()?.nota || 0);
+        minhaNotaSelecionada = nota >= 1 && nota <= 5 ? nota : 0;
+        atualizarVisualEstrelas(minhaNotaSelecionada);
+        atualizarBloqueioAvaliacao(false);
+        return minhaNotaSelecionada;
+    }
+
+    async function carregarAvaliacoesPerfil() {
+        if (!registroAtual) {
+            return;
+        }
+
+        const anonimo = !usuarioAutenticadoFirebase();
+        const autoavaliacao = getIdentificadorPerfil() === identificadorAtual && tipoPerfilNormalizado(tipoPerfilAtual) === tipoPerfilNormalizado(tipoAtual);
+        const bloqueada = anonimo || autoavaliacao;
+        const motivo = anonimo ? 'Faça login para avaliar' : (autoavaliacao ? 'Voce nao pode se autoavaliar' : '');
+
+        try {
+            const resumo = await carregarResumoAvaliacoes();
+            const minhaNota = await carregarMinhaAvaliacaoPerfil();
+            atualizarTextoAvaliacao(resumo.media, resumo.total, minhaNota, bloqueada, motivo);
+        } catch (error) {
+            console.error('Erro ao carregar avaliações:', error);
+            atualizarTextoAvaliacao(0, 0, 0, bloqueada, motivo || 'Erro ao carregar avaliações');
+        }
+    }
+
+    async function selecionarNotaPerfil(nota) {
+        const notaNumero = Number(nota || 0);
+        if (notaNumero < 1 || notaNumero > 5) {
+            return;
+        }
+
+        if (!registroAtual) {
+            return;
+        }
+
+        const anonimo = !usuarioAutenticadoFirebase();
+        if (anonimo) {
+            alert('Faça login para enviar avaliações.');
+            return;
+        }
+
+        if (getIdentificadorPerfil() === identificadorAtual && tipoPerfilNormalizado(tipoPerfilAtual) === tipoPerfilNormalizado(tipoAtual)) {
+            alert('Você não pode avaliar seu próprio perfil.');
+            return;
+        }
+
+        const deTipo = tipoPerfilNormalizado(tipoAtual);
+        const paraTipo = tipoPerfilNormalizado(tipoPerfilAtual);
+        const docId = comporAvaliacaoId(deTipo, identificadorAtual, paraTipo, getIdentificadorPerfil());
+
+        try {
+            await db.collection('avaliacoes').doc(docId).set({
+                deId: identificadorAtual,
+                deTipo,
+                paraId: getIdentificadorPerfil(),
+                paraTipo,
+                nota: notaNumero,
+                atualizadoEm: new Date().toISOString(),
+            }, { merge: true });
+
+            minhaNotaSelecionada = notaNumero;
+            atualizarVisualEstrelas(minhaNotaSelecionada);
+            await carregarAvaliacoesPerfil();
+        } catch (error) {
+            console.error('Erro ao salvar avaliação:', error);
+            alert('Erro ao salvar avaliação.');
+        }
+    }
+
+    window.selecionarNotaPerfil = selecionarNotaPerfil;
 
     function normalizarSlotAgenda(valorSlot) {
         if (!valorSlot) {
@@ -410,6 +628,13 @@
         }
     }
 
+    function pararMonitorComprasTempoReal() {
+        if (unsubscribeComprasTempoReal) {
+            unsubscribeComprasTempoReal();
+            unsubscribeComprasTempoReal = null;
+        }
+    }
+
     function abrirPerfilParaSolicitacoes() {
         const idPerfil = encodeURIComponent(getIdentificadorPerfil());
         const tipoPerfil = encodeURIComponent(tipoPerfilAtual || 'salao');
@@ -427,6 +652,26 @@
         const notification = new Notification('Nova solicitação de agendamento', {
             body: corpo,
             tag: `sol_${solicitacao.id || 'nova'}`,
+        });
+
+        notification.onclick = function () {
+            window.focus();
+            abrirPerfilParaSolicitacoes();
+            notification.close();
+        };
+    }
+
+    function notificarSolicitacaoCompra(compra) {
+        if (!window.MyHairPermissoes || !window.MyHairPermissoes.podeNotificar()) {
+            return;
+        }
+
+        const retirada = compra.retiradaLabel || compra.retirada || 'Retirada não informada';
+        const total = formatarMoeda(compra.total || 0);
+        const corpo = `${compra.clienteNome || 'Cliente'} - ${retirada} - ${total}`;
+        const notification = new Notification('Nova solicitação de compra', {
+            body: corpo,
+            tag: `compra_${compra.id || 'nova'}`,
         });
 
         notification.onclick = function () {
@@ -470,6 +715,43 @@
                 carregarSolicitacoesPendentes().catch(() => {});
             }, (error) => {
                 console.error('Erro no monitor de solicitações:', error);
+            });
+    }
+
+    function iniciarMonitorComprasTempoReal() {
+        pararMonitorComprasTempoReal();
+
+        if (!podeGerenciarSolicitacoes()) {
+            return;
+        }
+
+        comprasNotificadas = new Set();
+        comprasSnapshotInicializado = false;
+
+        unsubscribeComprasTempoReal = db.collection('solicitacoes_compra_produtos')
+            .where('prestadorId', '==', getIdentificadorPerfil())
+            .where('status', '==', 'pendente')
+            .onSnapshot((snap) => {
+                if (!comprasSnapshotInicializado) {
+                    snap.forEach((doc) => comprasNotificadas.add(doc.id));
+                    comprasSnapshotInicializado = true;
+                    return;
+                }
+
+                snap.docChanges().forEach((change) => {
+                    if (change.type !== 'added') {
+                        return;
+                    }
+                    if (comprasNotificadas.has(change.doc.id)) {
+                        return;
+                    }
+                    comprasNotificadas.add(change.doc.id);
+                    notificarSolicitacaoCompra({ id: change.doc.id, ...change.doc.data() });
+                });
+
+                carregarSolicitacoesCompraPendentes().catch(() => {});
+            }, (error) => {
+                console.error('Erro no monitor de compras:', error);
             });
     }
 
@@ -554,6 +836,99 @@
     }
 
     window.responderSolicitacaoAgendamento = responderSolicitacaoAgendamento;
+
+    function resumoItensCompra(itens) {
+        if (!Array.isArray(itens) || !itens.length) {
+            return 'Sem itens';
+        }
+        return itens.map((item) => {
+            const nome = item.nome || 'Item';
+            const quantidade = Number(item.quantidade || 0);
+            return `${nome} x${quantidade || 1}`;
+        }).join(' | ');
+    }
+
+    function renderizarSolicitacoesCompraPendentes(compras) {
+        const painel = document.getElementById('painelCompras');
+        const lista = document.getElementById('listaCompras');
+        if (!painel || !lista) {
+            return;
+        }
+
+        if (!podeGerenciarSolicitacoes()) {
+            painel.style.display = 'none';
+            return;
+        }
+
+        painel.style.display = 'block';
+
+        if (!compras.length) {
+            lista.innerHTML = "<p style='font-size:11px; color:#666; margin:0;'>Nenhuma compra pendente.</p>";
+            return;
+        }
+
+        lista.innerHTML = compras.map((compra) => `
+            <div class="item-solicitacao">
+                <p><strong>${compra.clienteNome || 'Cliente'}</strong></p>
+                <p>Retirada: ${compra.retiradaLabel || compra.retirada || '-'}</p>
+                <p>Total: ${formatarMoeda(compra.total)}</p>
+                <p class="linha-itens">${resumoItensCompra(compra.itens)}</p>
+                <div class="acoes-solicitacao">
+                    <button type="button" class="btn-solicitacao btn-aceitar" onclick="responderSolicitacaoCompra('${compra.id}', 'aceito')">ACEITAR</button>
+                    <button type="button" class="btn-solicitacao btn-recusar" onclick="responderSolicitacaoCompra('${compra.id}', 'recusado')">RECUSAR</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function carregarSolicitacoesCompraPendentes() {
+        if (!podeGerenciarSolicitacoes()) {
+            renderizarSolicitacoesCompraPendentes([]);
+            return;
+        }
+
+        try {
+            const snap = await db.collection('solicitacoes_compra_produtos')
+                .where('prestadorId', '==', getIdentificadorPerfil())
+                .where('status', '==', 'pendente')
+                .get();
+
+            const compras = [];
+            snap.forEach((doc) => {
+                compras.push({ id: doc.id, ...doc.data() });
+            });
+
+            compras.sort((a, b) => String(a.criadoEm || '').localeCompare(String(b.criadoEm || '')));
+            renderizarSolicitacoesCompraPendentes(compras);
+        } catch (error) {
+            console.error('Erro ao carregar solicitações de compra:', error);
+            renderizarSolicitacoesCompraPendentes([]);
+        }
+    }
+
+    async function responderSolicitacaoCompra(compraId, resposta) {
+        if (!podeGerenciarSolicitacoes()) {
+            return;
+        }
+
+        try {
+            await db.collection('solicitacoes_compra_produtos').doc(compraId).set({
+                status: resposta,
+                respostaEm: new Date().toISOString(),
+                mensagemPrestador: resposta === 'aceito'
+                    ? 'compra aprovada pelo prestador'
+                    : 'compra recusada pelo prestador',
+            }, { merge: true });
+
+            alert(resposta === 'aceito' ? 'Compra aceita com sucesso.' : 'Compra recusada.');
+            await carregarSolicitacoesCompraPendentes();
+        } catch (error) {
+            console.error('Erro ao responder compra:', error);
+            alert('Erro ao responder solicitação de compra.');
+        }
+    }
+
+    window.responderSolicitacaoCompra = responderSolicitacaoCompra;
 
     async function resolverPerfilAtual() {
         const usuarioAuth = auth.currentUser;
@@ -990,8 +1365,11 @@
             preencherAgendaAtual();
             atualizarBotaoFavorito();
             aplicarPermissoesEdicao();
+            await carregarAvaliacoesPerfil();
             await carregarSolicitacoesPendentes();
+            await carregarSolicitacoesCompraPendentes();
             iniciarMonitorSolicitacoesTempoReal();
+            iniciarMonitorComprasTempoReal();
         } catch (error) {
             console.error('Erro ao carregar perfil:', error);
         }
@@ -1029,6 +1407,7 @@
 
     window.addEventListener('beforeunload', () => {
         pararMonitorSolicitacoesTempoReal();
+        pararMonitorComprasTempoReal();
     });
 </script>
 </body>

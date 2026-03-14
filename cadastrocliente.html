@@ -17,6 +17,7 @@
         label { display: block; margin-top: 8px; font-weight: bold; font-size: 11px; }
         input { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
         .btn-save { width: 100%; padding: 10px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; }
+        .btn-voltar { display: inline-block; margin-top: 10px; text-decoration: none; background: #f3f3f3; color: #4c4c4c; border-radius: 8px; padding: 7px 12px; font-size: 11px; font-weight: bold; }
         .links-aux { text-align: center; margin-top: 10px; font-size: 12px; }
         .links-aux a { color: #0288d1; text-decoration: none; font-weight: bold; }
     </style>
@@ -26,6 +27,7 @@
 <div class="login-card" style="margin: 16px auto;">
   <header><h1>MY HAIR</h1><p>Cadastro de Cliente</p></header>
   <main>
+            <a href="index.html" class="btn-voltar">VOLTAR</a>
       <div class="form-card">
           <form id="formCliente">
               <h2>Crie sua conta</h2>
@@ -93,8 +95,19 @@
             if (window.MyHairPermissoes) {
                 await window.MyHairPermissoes.solicitarPermissoesBasicas();
             }
-            await auth.createUserWithEmailAndPassword(email, senha);
-            await db.collection("clientes").add(dados);
+            const credencial = await auth.createUserWithEmailAndPassword(email, senha);
+            const uid = credencial?.user?.uid || '';
+
+            if (uid) {
+                await db.collection("clientes").doc(uid).set({
+                    ...dados,
+                    uid,
+                }, { merge: true });
+                localStorage.setItem('usuarioID', uid);
+                localStorage.setItem('myhair_tipo_usuario', 'cliente');
+            } else {
+                await db.collection("clientes").add(dados);
+            }
             alert("Cadastro realizado com sucesso! Bem-vindo ao MY HAIR.");
             window.location.href = "visaogeral.html";
         } catch(e) {

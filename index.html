@@ -48,6 +48,7 @@
         <div>Notificações: <span id="statusPermNotificacoes">Pendente</span></div>
         <div>Localização: <span id="statusPermLocalizacao">Pendente</span></div>
         <div>Câmera: <span id="statusPermCamera">Pendente</span></div>
+        <div id="statusPermissoesInfo" style="margin-top:6px; font-size:10px; color:#4f667b;">Permissões opcionais: você pode continuar usando o app normalmente.</div>
         <button id="btnPermissoesApp" type="button" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1px solid #b3e5fc; background:#fff; color:#0288d1; font-weight:bold; cursor:pointer;">AUTORIZAR PERMISSÕES</button>
     </div>
 
@@ -161,7 +162,7 @@
 
         try {
             if (window.MyHairPermissoes) {
-                await window.MyHairPermissoes.solicitarPermissoesBasicas();
+                await window.MyHairPermissoes.solicitarPermissoesEssenciais();
             }
             await auth.signInWithEmailAndPassword(email, senha);
             window.location.href = 'visaogeral.html';
