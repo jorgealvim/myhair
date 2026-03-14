@@ -14,7 +14,8 @@
         .form-card { background: white; padding: 14px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         h2 { font-size: 13px; border-bottom: 2px solid #b3e5fc; padding-bottom: 6px; margin-top: 6px; text-transform: uppercase; }
         label { display: block; margin-top: 8px; font-weight: bold; font-size: 11px; }
-        input, select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+        input, select, textarea { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+        textarea { resize: vertical; min-height: 70px; }
         
         /* Estilo para Grades de Ícones/Checkboxes */
         .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
@@ -105,6 +106,9 @@
                 <div class="half"><label>WhatsApp</label><input type="text" id="whats"></div>
                 <div class="half"><label>E-mail</label><input type="email" id="email"></div>
             </div>
+
+            <label>Boas-vindas (Cartão de Visitas)</label>
+            <textarea id="boasVindas" placeholder="Ex: Seja bem-vindo ao nosso salão! Será um prazer cuidar de você."></textarea>
 
             <div class="row">
                 <div class="half"><label>Criar Senha</label><input type="password" id="senha"></div>
@@ -222,6 +226,11 @@
         const senha = document.getElementById('senha').value;
         const confirmar = document.getElementById('confirmarSenha').value;
         const email = document.getElementById('email').value.trim();
+        const cidadeUfBruta = document.getElementById('cidade').value.trim();
+        const partesCidadeUf = cidadeUfBruta.split('/').map((item) => item.trim()).filter(Boolean);
+        const cidadeNome = partesCidadeUf[0] || cidadeUfBruta;
+        const uf = partesCidadeUf[1] || '';
+        const whats = document.getElementById('whats').value;
 
         if (!email) {
             alert("Informe o e-mail para criar a conta.");
@@ -252,14 +261,18 @@
             documento: document.getElementById('documento').value,
             nome: document.getElementById('nome').value,
             fantasia: document.getElementById('fantasia').value || "",
-            whats: document.getElementById('whats').value,
+            boasVindas: document.getElementById('boasVindas').value.trim(),
+            whats: whats,
+            whatsapp: whats,
             email: email,
             cep: document.getElementById('cep').value,
+            endereco: document.getElementById('rua').value,
             rua: document.getElementById('rua').value,
             numero: document.getElementById('numero').value,
             complemento: document.getElementById('complemento').value,
             bairro: document.getElementById('bairro').value,
-            cidade: document.getElementById('cidade').value,
+            cidade: cidadeNome,
+            uf: uf,
             banco: document.getElementById('banco').value,
             agencia: document.getElementById('ag').value,
             conta: document.getElementById('cc').value,

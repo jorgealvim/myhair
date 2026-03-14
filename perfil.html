@@ -83,9 +83,6 @@
                 <h3 id="nomeProfissional">Carregando...</h3>
                 <p id="idProfissional">ID: MH-0000</p>
             </div>
-            <div class="resumo-acoes">
-                <button type="button" id="btnFavoritoPerfil" class="btn-favorito">FAVORITAR</button>
-            </div>
         </div>
 
         <nav class="menu-tabs">
@@ -288,6 +285,41 @@
         return tipoPerfilAtual === 'salao' && tipoAtual === 'salao' && getIdentificadorPerfil() === identificadorAtual;
     }
 
+    function podeEditarPerfil() {
+        return tipoPerfilAtual === 'salao' && tipoAtual === 'salao' && getIdentificadorPerfil() === identificadorAtual;
+    }
+
+    function aplicarPermissoesEdicao() {
+        const permitido = podeEditarPerfil();
+
+        document.querySelectorAll('#agenda input, #agenda button.btn-disponivel').forEach((el) => {
+            el.disabled = !permitido;
+        });
+
+        const botaoAgenda = document.querySelector('#agenda .btn-update');
+        if (botaoAgenda) {
+            botaoAgenda.disabled = !permitido;
+        }
+
+        document.querySelectorAll('#servicos input').forEach((el) => {
+            el.disabled = !permitido;
+        });
+
+        const botaoServicos = document.querySelector('#servicos .btn-update');
+        if (botaoServicos) {
+            botaoServicos.disabled = !permitido;
+        }
+
+        document.querySelectorAll('#produtos input').forEach((el) => {
+            el.disabled = !permitido;
+        });
+
+        const botaoProdutos = document.querySelector('#produtos .btn-update');
+        if (botaoProdutos) {
+            botaoProdutos.disabled = !permitido;
+        }
+    }
+
     function renderizarSolicitacoesPendentes(solicitacoes) {
         const painel = document.getElementById('painelSolicitacoes');
         const lista = document.getElementById('listaSolicitacoes');
@@ -467,6 +499,9 @@
 
     function atualizarBotaoFavorito() {
         const botao = document.getElementById('btnFavoritoPerfil');
+        if (!botao) {
+            return;
+        }
         const favoritos = getFavoritos();
         const identificador = getIdentificadorPerfil();
         const euFavorito = favoritosSaida.has(identificador) || favoritos.has(identificador);
@@ -595,7 +630,11 @@
         const corpo = document.getElementById('corpoServicos');
         corpo.innerHTML = '';
 
-        const servicos = Array.isArray(registroAtual?.tabelaServicos) ? registroAtual.tabelaServicos : [];
+        const servicos = Array.isArray(registroAtual?.tabelaServicos) && registroAtual.tabelaServicos.length
+            ? registroAtual.tabelaServicos
+            : (Array.isArray(registroAtual?.servicosOferecidos)
+                ? registroAtual.servicosOferecidos.map((servico) => ({ nome: servico, preco: '-', tempo: '-' }))
+                : []);
         servicos.forEach((servico) => {
             corpo.innerHTML += `<tr><td>${servico.nome}</td><td>R$ ${servico.preco}</td><td>${servico.tempo}</td></tr>`;
         });
@@ -605,13 +644,22 @@
         const corpo = document.getElementById('corpoProdutos');
         corpo.innerHTML = '';
 
-        const produtos = Array.isArray(registroAtual?.tabelaProdutos) ? registroAtual.tabelaProdutos : [];
+        const produtos = Array.isArray(registroAtual?.tabelaProdutos) && registroAtual.tabelaProdutos.length
+            ? registroAtual.tabelaProdutos
+            : (Array.isArray(registroAtual?.produtosVenda)
+                ? registroAtual.produtosVenda.map((produto) => ({ nome: produto, estoque: '-', preco: '-' }))
+                : []);
         produtos.forEach((produto) => {
             corpo.innerHTML += `<tr><td>${produto.nome}</td><td>${produto.estoque}</td><td>R$ ${produto.preco}</td></tr>`;
         });
     }
 
     async function atualizarAgenda() {
+        if (!podeEditarPerfil()) {
+            alert('Somente o dono do cadastro pode alterar a agenda.');
+            return;
+        }
+
         if (!referenciaAtual) {
             alert('Perfil ainda nao carregado.');
             return;
@@ -664,6 +712,11 @@
     }
 
     async function atualizarServicos() {
+        if (!podeEditarPerfil()) {
+            alert('Somente o dono do cadastro pode incluir ou alterar serviços.');
+            return;
+        }
+
         if (!referenciaAtual) {
             alert('Perfil ainda nao carregado.');
             return;
@@ -699,6 +752,11 @@
     }
 
     async function atualizarProdutos() {
+        if (!podeEditarPerfil()) {
+            alert('Somente o dono do cadastro pode incluir ou alterar produtos.');
+            return;
+        }
+
         if (!referenciaAtual) {
             alert('Perfil ainda nao carregado.');
             return;
@@ -808,6 +866,7 @@
             renderizarProdutos();
             preencherAgendaAtual();
             atualizarBotaoFavorito();
+            aplicarPermissoesEdicao();
             await carregarSolicitacoesPendentes();
         } catch (error) {
             console.error('Erro ao carregar perfil:', error);
@@ -822,7 +881,10 @@
         document.getElementById('ano').addEventListener('change', carregarSlotsAgenda);
         document.getElementById('mes').addEventListener('change', carregarSlotsAgenda);
         document.getElementById('dia').addEventListener('change', carregarSlotsAgenda);
-        document.getElementById('btnFavoritoPerfil').addEventListener('click', alternarFavoritoPerfil);
+        const btnFavoritoPerfil = document.getElementById('btnFavoritoPerfil');
+        if (btnFavoritoPerfil) {
+            btnFavoritoPerfil.addEventListener('click', alternarFavoritoPerfil);
+        }
         carregarPerfil();
     };
 

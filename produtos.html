@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Produtos</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--pink); margin: 0; min-height: 100vh; padding: 24px; color: #29313a; }
+        .page { max-width: 960px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 16px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); padding: 18px; }
+        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #edf1f4; padding-bottom: 10px; margin-bottom: 12px; }
+        h1 { margin: 0; font-size: 24px; }
+        .btn-voltar { text-decoration: none; border: 1px solid #f2dfb8; background: #fff7e8; color: #8a5a00; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; }
+        .sub { font-size: 14px; color: #5e707f; margin: 0 0 12px; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+        th { text-align: left; background: #fff9ef; color: #7a5417; padding: 10px; font-size: 13px; }
+        td { padding: 10px; border-top: 1px solid #edf1f4; font-size: 13px; }
+        .vazio { color: #6d7d8b; font-size: 13px; margin: 10px 0 0; }
+
+        @media (max-width: 720px) {
+            body { padding: 12px; }
+            .card { padding: 14px; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="card">
+        <div class="topo">
+            <h1>Produtos</h1>
+            <a href="visaogeral.html" class="btn-voltar">VOLTAR</a>
+        </div>
+        <p id="subtitulo" class="sub">Carregando dados do prestador...</p>
+        <div id="conteudo"></div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
+        authDomain: "my-hair-v2.firebaseapp.com",
+        projectId: "my-hair-v2",
+        storageBucket: "my-hair-v2.appspot.com",
+        messagingSenderId: "672931938550",
+        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+
+    const db = firebase.firestore();
+    const params = new URLSearchParams(window.location.search);
+    const prestadorId = params.get('prestadorId') || '';
+    const prestadorNome = params.get('prestadorNome') ? decodeURIComponent(params.get('prestadorNome')) : 'Prestador';
+
+    function renderizarTabela(produtos) {
+        const conteudo = document.getElementById('conteudo');
+        if (!Array.isArray(produtos) || !produtos.length) {
+            conteudo.innerHTML = '<p class="vazio">Este prestador ainda não cadastrou produtos.</p>';
+            return;
+        }
+
+        const linhas = produtos.map((produto) => `
+            <tr>
+                <td>${produto.nome || '-'}</td>
+                <td>${produto.estoque || '-'}</td>
+                <td>R$ ${produto.preco || '-'}</td>
+            </tr>
+        `).join('');
+
+        conteudo.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Produto</th><th>Estoque</th><th>Preço</th></tr>
+                </thead>
+                <tbody>${linhas}</tbody>
+            </table>
+        `;
+    }
+
+    async function carregar() {
+        document.getElementById('subtitulo').textContent = `${prestadorNome}`;
+        if (!prestadorId) {
+            document.getElementById('conteudo').innerHTML = '<p class="vazio">Prestador não informado.</p>';
+            return;
+        }
+
+        let registro = null;
+
+        const docDireto = await db.collection('usuarios').doc(prestadorId).get();
+        if (docDireto.exists) {
+            registro = docDireto.data();
+        } else {
+            const busca = await db.collection('usuarios').where('idSistema', '==', prestadorId).limit(1).get();
+            if (!busca.empty) {
+                registro = busca.docs[0].data();
+            }
+        }
+
+        if (!registro) {
+            document.getElementById('conteudo').innerHTML = '<p class="vazio">Prestador não encontrado.</p>';
+            return;
+        }
+
+        const produtos = Array.isArray(registro.tabelaProdutos) && registro.tabelaProdutos.length
+            ? registro.tabelaProdutos
+            : (Array.isArray(registro.produtosVenda)
+                ? registro.produtosVenda.map((produto) => ({ nome: produto, estoque: '-', preco: '-' }))
+                : []);
+
+        renderizarTabela(produtos);
+    }
+
+    carregar().catch((error) => {
+        console.error(error);
+        document.getElementById('conteudo').innerHTML = '<p class="vazio">Erro ao carregar produtos.</p>';
+    });
+</script>
+</body>
+</html>

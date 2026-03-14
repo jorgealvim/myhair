@@ -56,7 +56,10 @@
         .btn-mapa { background: #eef7ff; color: #0a5a91; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: bold; border: 1px solid #cfe7ff; }
         .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
         .btn-favorito.ativo { background: #ffe48a; color: #5b4700; }
+        .btn-cartao { width: 100%; background: #eef7ff; color: #0a5a91; border: 1px solid #cfe7ff; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
         .btn-agendar-link { width: 100%; background: #dff1ff; color: #0f4e78; border: 1px solid #bdddf3; border-radius: 8px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
+        .btn-servicos-link { width: 100%; background: #eafaf0; color: #1f6a36; border: 1px solid #cdebd9; border-radius: 8px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
+        .btn-produtos-link { width: 100%; background: #fff7e8; color: #8a5a00; border: 1px solid #f2dfb8; border-radius: 8px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
         .painel-solicitacoes-cliente { background: #f8fcff; border: 1px solid #ddeaf5; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
         .painel-solicitacoes-cliente h3 { margin: 0 0 6px; font-size: 12px; color: #35516b; }
         .item-solic-cliente { border-top: 1px solid #e9eff5; padding-top: 6px; margin-top: 6px; }
@@ -65,6 +68,17 @@
         .status-solicitacao.pendente { color: #8f6a00; }
         .status-solicitacao.aceito { color: #1f6a36; }
         .status-solicitacao.recusado { color: #8d2c2c; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 999; }
+        .modal-overlay.aberto { display: flex; }
+        .modal-card { width: min(560px, 100%); background: #fff; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,0.22); padding: 16px; }
+        .modal-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid #eef1f4; padding-bottom: 8px; margin-bottom: 10px; }
+        .modal-topo h3 { margin: 0; font-size: 18px; color: #1d3f59; }
+        .btn-fechar-modal { border: none; background: #f3f8fd; color: #356287; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .boas-vindas-box { background: #f7fcff; border: 1px solid #e2eef7; border-radius: 10px; padding: 10px; font-size: 13px; color: #3d5365; }
+        .especialidades-icones { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); gap: 8px; }
+        .esp-item { border: 1px solid #e5edf4; border-radius: 8px; padding: 8px; text-align: center; background: #fff; }
+        .esp-item span { display: block; font-size: 18px; }
+        .esp-item p { margin: 4px 0 0; font-size: 11px; font-weight: bold; color: #496075; }
 
         @media (max-width: 420px) {
             body { padding: 12px; }
@@ -132,6 +146,18 @@
     </div>
 </div>
 
+<div id="modalCartao" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Cartão de visitas">
+    <div class="modal-card">
+        <div class="modal-topo">
+            <h3 id="tituloCartao">Cartão de Visitas</h3>
+            <button type="button" class="btn-fechar-modal" onclick="fecharCartaoVisitas()">FECHAR</button>
+        </div>
+        <p id="localCartao" style="margin:0 0 8px; font-size:12px; color:#6a7f91;">--</p>
+        <div class="boas-vindas-box" id="boasVindasCartao">Seja bem-vindo.</div>
+        <div class="especialidades-icones" id="especialidadesCartao"></div>
+    </div>
+</div>
+
 <script>
     // Substitua pelos seus dados reais do Firebase
     const firebaseConfig = {
@@ -162,6 +188,17 @@
     let favoritosEntrada = new Set();
     let clienteAtualNome = 'Cliente';
     let solicitacoesCliente = [];
+
+    const ICONES_SERVICO = {
+        cabelo: { icon: '💇‍♂️', label: 'Cabelo' },
+        pe: { icon: '👣', label: 'Pé' },
+        mao: { icon: '💅', label: 'Mão' },
+        sobrancelha: { icon: '👁️', label: 'Sobrancelha' },
+        maquiagem: { icon: '💄', label: 'Maquiagem' },
+        barba: { icon: '🧔', label: 'Barba' },
+        massagem: { icon: '💆‍♀️', label: 'Massagem' },
+        depilacao: { icon: '🍯', label: 'Depilação' },
+    };
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
@@ -444,12 +481,13 @@
     }
 
     function montarEnderecoMapa(parceiro) {
+        const localizacao = extrairCidadeUf(parceiro);
         const partes = [
-            parceiro.endereco,
+            parceiro.endereco || parceiro.rua || parceiro.logradouro,
             parceiro.numero,
             parceiro.bairro,
-            parceiro.cidade,
-            parceiro.uf,
+            localizacao.cidade,
+            localizacao.uf,
         ].filter(Boolean);
 
         if (partes.length === 0) {
@@ -464,11 +502,89 @@
         return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`;
     }
 
+    function extrairCidadeUf(parceiro) {
+        const cidadeBruta = String(parceiro.cidade || '').trim();
+        const ufBruta = String(parceiro.uf || '').trim();
+
+        if (ufBruta) {
+            return {
+                cidade: cidadeBruta,
+                uf: ufBruta,
+                texto: [cidadeBruta, ufBruta].filter(Boolean).join('/'),
+            };
+        }
+
+        if (cidadeBruta.includes('/')) {
+            const partes = cidadeBruta.split('/').map((item) => item.trim()).filter(Boolean);
+            return {
+                cidade: partes[0] || cidadeBruta,
+                uf: partes[1] || '',
+                texto: partes.join('/'),
+            };
+        }
+
+        return {
+            cidade: cidadeBruta,
+            uf: '',
+            texto: cidadeBruta,
+        };
+    }
+
     function comporRelacaoId(deId, paraId) {
         const deSafe = String(deId).replace(/[^a-zA-Z0-9_-]/g, '_');
         const paraSafe = String(paraId).replace(/[^a-zA-Z0-9_-]/g, '_');
         return `fav_${deSafe}__${paraSafe}`;
     }
+
+    function obterParceiroPorId(id, tipo) {
+        const lista = tipo === 'cliente' ? clientesCache : saloesCache;
+        return lista.find((item) => item.entityId === id) || null;
+    }
+
+    function montarEspecialidadesEmIcones(servicos) {
+        if (!Array.isArray(servicos) || !servicos.length) {
+            return '<div class="esp-item"><span>✨</span><p>Atendimento</p></div>';
+        }
+
+        return servicos.map((serv) => {
+            const mapa = ICONES_SERVICO[String(serv || '').toLowerCase()];
+            if (!mapa) {
+                return `<div class="esp-item"><span>✨</span><p>${serv}</p></div>`;
+            }
+            return `<div class="esp-item"><span>${mapa.icon}</span><p>${mapa.label}</p></div>`;
+        }).join('');
+    }
+
+    function abrirCartaoVisitas(idParceiro, tipoParceiro) {
+        const parceiro = obterParceiroPorId(idParceiro, tipoParceiro);
+        if (!parceiro) {
+            return;
+        }
+
+        const titulo = document.getElementById('tituloCartao');
+        const local = document.getElementById('localCartao');
+        const boasVindas = document.getElementById('boasVindasCartao');
+        const especialidades = document.getElementById('especialidadesCartao');
+        const modal = document.getElementById('modalCartao');
+
+        const nome = parceiro.fantasia || parceiro.nome || 'Parceiro';
+        const bairro = parceiro.bairro || 'Bairro não informado';
+        const cidade = extrairCidadeUf(parceiro).texto || '';
+        const boasVindasTexto = parceiro.boasVindas || `Olá, seja bem-vindo ao espaço ${nome}. Será um prazer atender você.`;
+
+        titulo.textContent = `Cartão de Visitas - ${nome}`;
+        local.textContent = `📍 ${bairro}${cidade ? ' - ' + cidade : ''}`;
+        boasVindas.textContent = boasVindasTexto;
+        especialidades.innerHTML = montarEspecialidadesEmIcones(parceiro.servicosOferecidos || []);
+        modal.classList.add('aberto');
+    }
+
+    function fecharCartaoVisitas() {
+        document.getElementById('modalCartao').classList.remove('aberto');
+    }
+
+    window.abrirCartaoVisitas = abrirCartaoVisitas;
+    window.fecharCartaoVisitas = fecharCartaoVisitas;
 
     async function resolverPerfilAtual() {
         const usuarioAuth = auth.currentUser;
@@ -677,7 +793,7 @@
             const nomeDisp = p.fantasia || p.nome || "Profissional";
             const inicial = nomeDisp.charAt(0).toUpperCase();
             const bairro = p.bairro || "Bairro não informado";
-            const cidade = p.cidade || "";
+            const cidade = extrairCidadeUf(p).texto || "";
             const statusFuncionamento = obterStatusFuncionamento(p);
             const linkMapa = gerarLinkGoogleMaps(p);
             const idParceiro = getIdentificadorParceiro(p);
@@ -697,6 +813,10 @@
             const agendamentoHtml = agendamentoHabilitado ? `
                 <a class="btn-agendar-link" href="agendamento.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}">MARCAR HORÁRIO</a>
             ` : '';
+            const botoesCatalogoHtml = p.entityType === 'salao' ? `
+                <a class="btn-servicos-link" href="servicos.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}">SERVIÇOS</a>
+                <a class="btn-produtos-link" href="produtos.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}">PRODUTOS</a>
+            ` : '';
 
             lista.innerHTML += `
                 <div class="card-parceiro ${p.tipoConta === 'PJ' ? 'vip' : ''}">
@@ -711,7 +831,8 @@
                     <div class="acoes-card">
                         <button type="button" class="btn-favorito ${favorito ? 'ativo' : ''}" onclick="alternarFavorito('${idParceiro}', '${p.entityType}')">${euFavorito ? 'DESFAVORITAR' : (favoritouVoce ? 'RETRIBUIR' : 'FAVORITAR')}</button>
                         <a href="${linkMapa}" target="_blank" rel="noopener noreferrer" class="btn-mapa">MAPA</a>
-                        <a href="perfil.html?id=${p.idSistema || p.idDoc}&tipo=${p.entityType}" class="btn-perfil">VER</a>
+                        <button type="button" class="btn-cartao" onclick="abrirCartaoVisitas('${idParceiro}', '${p.entityType}')">CARTÃO DE VISITAS</button>
+                        ${botoesCatalogoHtml}
                         ${agendamentoHtml}
                     </div>
                 </div>
@@ -793,6 +914,12 @@
     auth.onAuthStateChanged(async () => {
         atualizarIdentificadorAtual();
         await carregarProfissionais();
+    });
+
+    document.getElementById('modalCartao').addEventListener('click', function(evento) {
+        if (evento.target.id === 'modalCartao') {
+            fecharCartaoVisitas();
+        }
     });
 
     window.onload = carregarProfissionais;
