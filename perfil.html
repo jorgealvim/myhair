@@ -22,6 +22,9 @@
         .btn-favorito.ativo { background: #ffe48a; color: #5b4700; }
         .info-basica h3 { margin: 0; font-size: 13px; }
         .info-basica p { margin: 2px 0; font-size: 11px; color: #666; }
+        .status-acesso { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 4px 8px; border-radius: 999px; background: #f5f7fa; color: #4d5c69; font-size: 10px; font-weight: bold; }
+        .status-acesso.dev { background: #fff3cd; color: #7a5a00; }
+        .status-acesso.owner { background: #e7f8ed; color: #1c7b3a; }
 
         /* Menu Deslizante (Tabs) */
         .menu-tabs { display: flex; background: #fff; overflow-x: auto; margin-bottom: 8px; border-radius: 10px; box-shadow: inset 0 0 0 1px #f1f1f1; }
@@ -82,6 +85,7 @@
             <div class="info-basica">
                 <h3 id="nomeProfissional">Carregando...</h3>
                 <p id="idProfissional">ID: MH-0000</p>
+                <div id="statusAcesso" class="status-acesso">CARREGANDO ACESSO</div>
             </div>
         </div>
 
@@ -166,6 +170,9 @@
     const params = new URLSearchParams(window.location.search);
     const idUsuario = params.get('id') || localStorage.getItem('usuarioID') || "MH-NOVO";
     const tipoPerfilQuery = params.get('tipo');
+    const modoDesenvolvedorAtivo = params.get('dev') === '1'
+        || params.get('modo') === 'dev'
+        || localStorage.getItem('myhair_modo_dev') === '1';
     let registroAtual = null;
     let referenciaAtual = null;
     let tipoPerfilAtual = 'salao';
@@ -181,6 +188,32 @@
         const usuarioAuth = auth.currentUser;
         identificadorAtual = usuarioAuth?.uid || localStorage.getItem('usuarioID') || 'anonimo';
         return identificadorAtual;
+    }
+
+    function estaEmModoDesenvolvedor() {
+        return modoDesenvolvedorAtivo;
+    }
+
+    function atualizarStatusAcesso() {
+        const status = document.getElementById('statusAcesso');
+        if (!status) {
+            return;
+        }
+
+        if (estaEmModoDesenvolvedor()) {
+            status.className = 'status-acesso dev';
+            status.textContent = 'MODO DESENVOLVEDOR';
+            return;
+        }
+
+        if (tipoPerfilAtual === 'salao' && tipoAtual === 'salao' && getIdentificadorPerfil() === identificadorAtual) {
+            status.className = 'status-acesso owner';
+            status.textContent = 'DONO DO CADASTRO';
+            return;
+        }
+
+        status.className = 'status-acesso';
+        status.textContent = 'VISUALIZACAO';
     }
 
     function getFavoritos() {
@@ -282,15 +315,22 @@
     }
 
     function podeGerenciarSolicitacoes() {
+        if (estaEmModoDesenvolvedor()) {
+            return true;
+        }
         return tipoPerfilAtual === 'salao' && tipoAtual === 'salao' && getIdentificadorPerfil() === identificadorAtual;
     }
 
     function podeEditarPerfil() {
+        if (estaEmModoDesenvolvedor()) {
+            return true;
+        }
         return tipoPerfilAtual === 'salao' && tipoAtual === 'salao' && getIdentificadorPerfil() === identificadorAtual;
     }
 
     function aplicarPermissoesEdicao() {
         const permitido = podeEditarPerfil();
+        atualizarStatusAcesso();
 
         document.querySelectorAll('#agenda input, #agenda button.btn-disponivel').forEach((el) => {
             el.disabled = !permitido;
@@ -862,6 +902,7 @@
             document.getElementById('nomeProfissional').innerText = nomeExibicao;
             document.getElementById('avatarLetra').innerText = nomeExibicao.charAt(0).toUpperCase();
             document.getElementById('idProfissional').innerText = 'ID: ' + (registro.idSistema || registro.idDoc || idUsuario);
+            atualizarStatusAcesso();
             renderizarServicos();
             renderizarProdutos();
             preencherAgendaAtual();

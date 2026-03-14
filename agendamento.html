@@ -15,6 +15,7 @@
         .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #eef1f4; padding-bottom: 12px; margin-bottom: 14px; }
         .topo h1 { margin: 0; font-size: 24px; }
         .btn-voltar { border: 1px solid #d7e4ef; background: #f7fbff; color: #0f4e78; border-radius: 10px; padding: 9px 12px; font-weight: bold; text-decoration: none; font-size: 12px; }
+        .badge-dev { display: inline-flex; align-items: center; margin-top: 8px; padding: 5px 10px; border-radius: 999px; background: #fff3cd; color: #7a5a00; font-size: 11px; font-weight: bold; }
         .dados { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
         .bloco { background: #fbfdff; border: 1px solid #e7eef5; border-radius: 12px; padding: 12px; }
         .bloco label { display: block; font-size: 12px; font-weight: bold; color: #4b5f70; margin-bottom: 6px; }
@@ -45,6 +46,8 @@
             <h1>Marcar Horário</h1>
             <a class="btn-voltar" href="visaogeral.html">VOLTAR</a>
         </div>
+
+        <div id="badgeDev" class="badge-dev" style="display:none;">MODO DESENVOLVEDOR ATIVO</div>
 
         <div class="dados">
             <div class="bloco">
@@ -94,6 +97,9 @@
     const params = new URLSearchParams(window.location.search);
     const prestadorId = params.get('prestadorId') || '';
     const prestadorNomeParam = params.get('prestadorNome') || '';
+    const modoDesenvolvedorAtivo = params.get('dev') === '1'
+        || params.get('modo') === 'dev'
+        || localStorage.getItem('myhair_modo_dev') === '1';
 
     let prestadorAtual = null;
     let clienteAtual = { id: 'anonimo', nome: 'Cliente' };
@@ -103,6 +109,30 @@
 
     function sanitizarId(valor) {
         return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function estaEmModoDesenvolvedor() {
+        return modoDesenvolvedorAtivo;
+    }
+
+    function atualizarIndicadorModoDev() {
+        const badge = document.getElementById('badgeDev');
+        const botaoVoltar = document.querySelector('.btn-voltar');
+        const status = document.getElementById('statusHorario');
+
+        if (botaoVoltar) {
+            botaoVoltar.href = estaEmModoDesenvolvedor() ? 'visaogeral.html?dev=1' : 'visaogeral.html';
+        }
+
+        if (!badge) {
+            return;
+        }
+
+        badge.style.display = estaEmModoDesenvolvedor() ? 'inline-flex' : 'none';
+
+        if (estaEmModoDesenvolvedor() && status && clienteAtual.id === 'anonimo') {
+            status.textContent = 'Modo desenvolvedor: visualizacao liberada para validacao da tela.';
+        }
     }
 
     function hojeISO() {
@@ -361,6 +391,7 @@
         document.getElementById('btnConfirmar').addEventListener('click', solicitarAgendamento);
 
         await identificarClienteAtual();
+        atualizarIndicadorModoDev();
         await carregarPrestador();
         listarHorariosDisponiveis();
         await carregarSolicitacaoRecente();
@@ -374,6 +405,7 @@
     });
 
     window.onload = () => {
+        atualizarIndicadorModoDev();
         if (!prestadorId) {
             document.getElementById('statusHorario').textContent = 'Volte e escolha um prestador para agendar.';
         }

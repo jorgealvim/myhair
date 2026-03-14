@@ -27,6 +27,7 @@
         .btn-modo { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #f7f7f7; color: #666; font-size: 12px; font-weight: bold; cursor: pointer; }
         .btn-modo.ativo { background: #eaf6fd; color: var(--dark-blue); }
         .texto-apoio { font-size: 11px; color: #777; text-align: center; margin-top: -2px; }
+        .texto-apoio.dev { color: #7a5a00; font-weight: bold; }
 
         .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 50px; cursor: pointer; transition: 0.3s; opacity: 0.5; }
         .cat-item.active { opacity: 1; transform: scale(1.1); color: var(--dark-blue); }
@@ -175,6 +176,11 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
+    const params = new URLSearchParams(window.location.search);
+    const modoDesenvolvedorAtivo = params.get('dev') === '1'
+        || params.get('modo') === 'dev'
+        || localStorage.getItem('myhair_modo_dev') === '1';
+
     let saloesCache = [];
     let clientesCache = [];
     let listaAtualCache = [];
@@ -203,6 +209,30 @@
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
         identificadorAtual = usuarioAuth?.uid || localStorage.getItem('usuarioID') || 'anonimo';
+    }
+
+    function estaEmModoDesenvolvedor() {
+        return modoDesenvolvedorAtivo;
+    }
+
+    function getSufixoModoDev() {
+        return estaEmModoDesenvolvedor() ? '&dev=1' : '';
+    }
+
+    function atualizarIndicadorModoDev() {
+        const textoModo = document.getElementById('textoModoFavorito');
+        if (!textoModo) {
+            return;
+        }
+
+        if (estaEmModoDesenvolvedor()) {
+            textoModo.classList.add('dev');
+            textoModo.textContent = 'MODO DESENVOLVEDOR ATIVO: navegacao liberada para validacao.';
+            return;
+        }
+
+        textoModo.classList.remove('dev');
+        textoModo.textContent = 'Favoritos valem para ambos: cliente e salão.';
     }
 
     function getFavoritos() {
@@ -808,14 +838,15 @@
                 });
             }
 
-            const agendamentoHabilitado = (tipoAtual === 'cliente' && p.entityType === 'salao' && !identificadorAtual.startsWith('anonimo_'));
+            const agendamentoHabilitado = ((tipoAtual === 'cliente' && p.entityType === 'salao' && !identificadorAtual.startsWith('anonimo_')) || (estaEmModoDesenvolvedor() && p.entityType === 'salao'));
             const nomeParam = encodeURIComponent(nomeDisp);
+            const sufixoModoDev = getSufixoModoDev();
             const agendamentoHtml = agendamentoHabilitado ? `
-                <a class="btn-agendar-link" href="agendamento.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}">MARCAR HORÁRIO</a>
+                <a class="btn-agendar-link" href="agendamento.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}${sufixoModoDev}">MARCAR HORÁRIO</a>
             ` : '';
             const botoesCatalogoHtml = p.entityType === 'salao' ? `
-                <a class="btn-servicos-link" href="servicos.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}">SERVIÇOS</a>
-                <a class="btn-produtos-link" href="produtos.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}">PRODUTOS</a>
+                <a class="btn-servicos-link" href="servicos.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}${sufixoModoDev}">SERVIÇOS</a>
+                <a class="btn-produtos-link" href="produtos.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}${sufixoModoDev}">PRODUTOS</a>
             ` : '';
 
             lista.innerHTML += `
@@ -913,6 +944,7 @@
 
     auth.onAuthStateChanged(async () => {
         atualizarIdentificadorAtual();
+        atualizarIndicadorModoDev();
         await carregarProfissionais();
     });
 
@@ -922,7 +954,10 @@
         }
     });
 
-    window.onload = carregarProfissionais;
+    window.onload = () => {
+        atualizarIndicadorModoDev();
+        carregarProfissionais();
+    };
 </script>
 </body>
 </html>
