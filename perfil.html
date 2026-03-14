@@ -5,25 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Painel do Profissional</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; color: #333; }
-        header { background: white; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; color: #333; min-height: 100vh; padding: 20px; }
+        .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
+        .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
+        header { padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 12px; }
         
         /* Dados Básicos */
-        .perfil-resumo { background: white; margin: 10px auto; padding: 15px; max-width: 600px; border-radius: 12px; display: flex; align-items: center; gap: 15px; }
-        .avatar { width: 50px; height: 50px; background: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 20px; }
-        .info-basica h3 { margin: 0; font-size: 16px; }
-        .info-basica p { margin: 2px 0; font-size: 12px; color: #666; }
+        .perfil-resumo { background: #fff; margin: 0 0 12px; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 8px; box-shadow: inset 0 0 0 1px #f1f1f1; }
+        .avatar { width: 36px; height: 36px; background: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
+        .resumo-acoes { margin-left: auto; display: flex; align-items: center; }
+        .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .btn-favorito.ativo { background: #ffe48a; color: #5b4700; }
+        .info-basica h3 { margin: 0; font-size: 13px; }
+        .info-basica p { margin: 2px 0; font-size: 11px; color: #666; }
 
         /* Menu Deslizante (Tabs) */
-        .menu-tabs { display: flex; background: white; overflow-x: auto; sticky: top; top: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 10px; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; border-bottom: 3px solid transparent; white-space: nowrap; }
+        .menu-tabs { display: flex; background: #fff; overflow-x: auto; margin-bottom: 8px; border-radius: 10px; box-shadow: inset 0 0 0 1px #f1f1f1; }
+        .tab-btn { flex: 1; padding: 8px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; border-bottom: 2px solid transparent; white-space: nowrap; font-size: 12px; }
         .tab-btn.active { color: var(--dark-blue); border-bottom: 3px solid var(--dark-blue); }
 
-        main { max-width: 600px; margin: 0 auto; padding: 10px; }
-        .section-content { display: none; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        main { margin: 0; padding: 0; }
+        .section-content { display: none; background: white; padding: 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px #f1f1f1; }
         .section-content.active { display: block; }
 
         /* Estilização Geral de Tabelas e Forms */
@@ -42,73 +48,86 @@
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
         th { text-align: left; background: #f9f9f9; padding: 10px; }
         td { padding: 10px; border-bottom: 1px solid #eee; }
+
+        @media (max-width: 420px) {
+            body { padding: 12px; }
+            .login-card { padding: 16px; }
+            .grid-row { flex-direction: column; gap: 8px; }
+            .slot-agenda { align-items: flex-start; flex-direction: column; gap: 6px; }
+        }
     </style>
 </head>
 <body>
 
-<header><h1>MY HAIR</h1></header>
+<div class="page-shell">
+    <div class="login-card">
+        <header><h1>MY HAIR</h1></header>
 
-<div class="perfil-resumo">
-    <div class="avatar" id="avatarLetra">M</div>
-    <div class="info-basica">
-        <h3 id="nomeProfissional">Carregando...</h3>
-        <p id="idProfissional">ID: MH-0000</p>
+        <div class="perfil-resumo">
+            <div class="avatar" id="avatarLetra">M</div>
+            <div class="info-basica">
+                <h3 id="nomeProfissional">Carregando...</h3>
+                <p id="idProfissional">ID: MH-0000</p>
+            </div>
+            <div class="resumo-acoes">
+                <button type="button" id="btnFavoritoPerfil" class="btn-favorito">FAVORITAR</button>
+            </div>
+        </div>
+
+        <nav class="menu-tabs">
+            <button class="tab-btn active" onclick="openTab(event, 'agenda')">AGENDA</button>
+            <button class="tab-btn" onclick="openTab(event, 'servicos')">SERVIÇOS</button>
+            <button class="tab-btn" onclick="openTab(event, 'produtos')">PRODUTOS</button>
+        </nav>
+
+        <main>
+            <section id="agenda" class="section-content active">
+                <h2>Minha Agenda</h2>
+                <div class="grid-row">
+                    <div class="col"><label>Ano</label><input type="number" id="ano" value="2026"></div>
+                    <div class="col">
+                        <label>Mês</label>
+                        <select id="mes">
+                            <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
+                        </select>
+                    </div>
+                    <div class="col"><label>Dia</label><input type="number" id="dia" value="13"></div>
+                </div>
+
+                <div id="listaHorarios"></div>
+                <button class="btn-update" onclick="atualizarAgenda()">ATUALIZAR AGENDA</button>
+            </section>
+
+            <section id="servicos" class="section-content">
+                <h2>Tabela de Serviços</h2>
+                <div class="grid-row">
+                    <input type="text" id="serv_nome" placeholder="Serviço (ex: Corte)">
+                    <input type="text" id="serv_preco" placeholder="R$ 0,00" style="width: 80px;">
+                    <input type="text" id="serv_horas" placeholder="Horas" style="width: 60px;">
+                </div>
+                <table>
+                    <thead><tr><th>Serviço</th><th>Preço</th><th>Tempo</th></tr></thead>
+                    <tbody id="corpoServicos"></tbody>
+                </table>
+                <button class="btn-update" onclick="atualizarServicos()">ATUALIZAR SERVIÇOS</button>
+            </section>
+
+            <section id="produtos" class="section-content">
+                <h2>Tabela de Produtos</h2>
+                <div class="grid-row">
+                    <input type="text" id="prod_nome" placeholder="Produto">
+                    <input type="number" id="prod_estoque" placeholder="Qtd" style="width: 60px;">
+                    <input type="text" id="prod_preco" placeholder="Preço" style="width: 80px;">
+                </div>
+                <table>
+                    <thead><tr><th>Produto</th><th>Estoque</th><th>Preço</th></tr></thead>
+                    <tbody id="corpoProdutos"></tbody>
+                </table>
+                <button class="btn-update" onclick="atualizarProdutos()">ATUALIZAR PRODUTOS</button>
+            </section>
+        </main>
     </div>
 </div>
-
-<nav class="menu-tabs">
-    <button class="tab-btn active" onclick="openTab(event, 'agenda')">AGENDA</button>
-    <button class="tab-btn" onclick="openTab(event, 'servicos')">SERVIÇOS</button>
-    <button class="tab-btn" onclick="openTab(event, 'produtos')">PRODUTOS</button>
-</nav>
-
-<main>
-    <section id="agenda" class="section-content active">
-        <h2>Minha Agenda</h2>
-        <div class="grid-row">
-            <div class="col"><label>Ano</label><input type="number" id="ano" value="2026"></div>
-            <div class="col">
-                <label>Mês</label>
-                <select id="mes">
-                    <option value="1">Janeiro</option><option value="2">Fevereiro</option><option value="3">Março</option>
-                </select>
-            </div>
-            <div class="col"><label>Dia</label><input type="number" id="dia" value="13"></div>
-        </div>
-
-        <div id="listaHorarios">
-            </div>
-        <button class="btn-update" onclick="atualizarAgenda()">ATUALIZAR AGENDA</button>
-    </section>
-
-    <section id="servicos" class="section-content">
-        <h2>Tabela de Serviços</h2>
-        <div class="grid-row">
-            <input type="text" id="serv_nome" placeholder="Serviço (ex: Corte)">
-            <input type="text" id="serv_preco" placeholder="R$ 0,00" style="width: 80px;">
-            <input type="text" id="serv_horas" placeholder="Horas" style="width: 60px;">
-        </div>
-        <table>
-            <thead><tr><th>Serviço</th><th>Preço</th><th>Tempo</th></tr></thead>
-            <tbody id="corpoServicos"></tbody>
-        </table>
-        <button class="btn-update" onclick="atualizarServicos()">ATUALIZAR SERVIÇOS</button>
-    </section>
-
-    <section id="produtos" class="section-content">
-        <h2>Tabela de Produtos</h2>
-        <div class="grid-row">
-            <input type="text" id="prod_nome" placeholder="Produto">
-            <input type="number" id="prod_estoque" placeholder="Qtd" style="width: 60px;">
-            <input type="text" id="prod_preco" placeholder="Preço" style="width: 80px;">
-        </div>
-        <table>
-            <thead><tr><th>Produto</th><th>Estoque</th><th>Preço</th></tr></thead>
-            <tbody id="corpoProdutos"></tbody>
-        </table>
-        <button class="btn-update" onclick="atualizarProdutos()">ATUALIZAR PRODUTOS</button>
-    </section>
-</main>
 
 <script>
     // Inicialização do Firebase (Use as mesmas credenciais do cadastro)
@@ -120,10 +139,180 @@
         messagingSenderId: "672931938550",
         appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
-    const idUsuario = localStorage.getItem('usuarioID') || "MH-NOVO";
+    const params = new URLSearchParams(window.location.search);
+    const idUsuario = params.get('id') || localStorage.getItem('usuarioID') || "MH-NOVO";
+    let registroAtual = null;
+    let referenciaAtual = null;
+    let identificadorAtual = 'anonimo';
+    let tipoAtual = 'cliente';
+    let favoritosSaida = new Set();
+    let favoritosEntrada = new Set();
+
+    function atualizarIdentificadorAtual() {
+        const usuarioAuth = auth.currentUser;
+        identificadorAtual = usuarioAuth?.uid || localStorage.getItem('usuarioID') || 'anonimo';
+        return identificadorAtual;
+    }
+
+    function getFavoritos() {
+        const identificador = atualizarIdentificadorAtual();
+        try {
+            const salvo = localStorage.getItem(`myhair_favoritos_${identificador}`);
+            return new Set(JSON.parse(salvo || '[]'));
+        } catch (error) {
+            return new Set();
+        }
+    }
+
+    function salvarFavoritos(favoritos) {
+        const identificador = atualizarIdentificadorAtual();
+        localStorage.setItem(`myhair_favoritos_${identificador}`, JSON.stringify(Array.from(favoritos)));
+    }
+
+    function getIdentificadorPerfil() {
+        return registroAtual?.idSistema || registroAtual?.idDoc || idUsuario;
+    }
+
+    function comporRelacaoId(deId, paraId) {
+        const deSafe = String(deId).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const paraSafe = String(paraId).replace(/[^a-zA-Z0-9_-]/g, '_');
+        return `fav_${deSafe}__${paraSafe}`;
+    }
+
+    async function resolverPerfilAtual() {
+        const usuarioAuth = auth.currentUser;
+        if (usuarioAuth?.email) {
+            const buscaSalao = await db.collection('usuarios').where('email', '==', usuarioAuth.email).limit(1).get();
+            if (!buscaSalao.empty) {
+                const doc = buscaSalao.docs[0];
+                const dados = doc.data();
+                return {
+                    id: dados.idSistema || doc.id,
+                    tipo: 'salao',
+                };
+            }
+
+            const buscaCliente = await db.collection('clientes').where('email', '==', usuarioAuth.email).limit(1).get();
+            if (!buscaCliente.empty) {
+                const doc = buscaCliente.docs[0];
+                return {
+                    id: doc.id,
+                    tipo: 'cliente',
+                };
+            }
+        }
+
+        const idLocal = localStorage.getItem('usuarioID');
+        if (idLocal) {
+            return {
+                id: idLocal,
+                tipo: 'salao',
+            };
+        }
+
+        return {
+            id: `anonimo_${identificadorAtual}`,
+            tipo: 'cliente',
+        };
+    }
+
+    async function carregarRelacoesFavorito() {
+        favoritosSaida = new Set();
+        favoritosEntrada = new Set();
+
+        const saida = await db
+            .collection('favoritos')
+            .where('deId', '==', identificadorAtual)
+            .where('deTipo', '==', tipoAtual)
+            .get();
+
+        saida.forEach((doc) => {
+            const dados = doc.data();
+            favoritosSaida.add(dados.paraId);
+        });
+
+        const entrada = await db
+            .collection('favoritos')
+            .where('paraId', '==', identificadorAtual)
+            .where('paraTipo', '==', tipoAtual)
+            .get();
+
+        entrada.forEach((doc) => {
+            const dados = doc.data();
+            favoritosEntrada.add(dados.deId);
+        });
+    }
+
+    function atualizarBotaoFavorito() {
+        const botao = document.getElementById('btnFavoritoPerfil');
+        const favoritos = getFavoritos();
+        const identificador = getIdentificadorPerfil();
+        const euFavorito = favoritosSaida.has(identificador) || favoritos.has(identificador);
+        const favoritouVoce = favoritosEntrada.has(identificador);
+        const favorito = euFavorito || favoritouVoce;
+
+        botao.textContent = euFavorito ? 'DESFAVORITAR' : (favoritouVoce ? 'RETRIBUIR' : 'FAVORITAR');
+        botao.title = favoritouVoce ? 'Este perfil favoritou você' : '';
+        botao.classList.toggle('ativo', favorito);
+    }
+
+    async function alternarFavoritoPerfil() {
+        if (!registroAtual) {
+            return;
+        }
+
+        const favoritos = getFavoritos();
+        const identificador = getIdentificadorPerfil();
+        const tipoAlvo = 'salao';
+        const usuarioAnonimo = !identificadorAtual || identificadorAtual.startsWith('anonimo_') || identificadorAtual === 'anonimo';
+
+        if (usuarioAnonimo) {
+            if (favoritos.has(identificador)) {
+                favoritos.delete(identificador);
+            } else {
+                favoritos.add(identificador);
+            }
+            salvarFavoritos(favoritos);
+            atualizarBotaoFavorito();
+            alert('Favorito salvo localmente. Entre com login para sincronizar.');
+            return;
+        }
+
+        const jaFavorito = favoritosSaida.has(identificador);
+        const docId = comporRelacaoId(`${tipoAtual}_${identificadorAtual}`, `${tipoAlvo}_${identificador}`);
+        const ref = db.collection('favoritos').doc(docId);
+
+        try {
+            if (jaFavorito) {
+                await ref.delete();
+                favoritosSaida.delete(identificador);
+                favoritos.delete(identificador);
+            } else {
+                await ref.set({
+                    deId: identificadorAtual,
+                    deTipo: tipoAtual,
+                    paraId: identificador,
+                    paraTipo: tipoAlvo,
+                    criadoEm: new Date().toISOString(),
+                });
+                favoritosSaida.add(identificador);
+                favoritos.add(identificador);
+            }
+
+            salvarFavoritos(favoritos);
+            await carregarRelacoesFavorito();
+            atualizarBotaoFavorito();
+        } catch (error) {
+            console.error('Erro ao atualizar favorito no Firestore:', error);
+            alert('Erro ao atualizar favorito.');
+        }
+    }
 
     // Lógica das Abas
     function openTab(evt, tabName) {
@@ -149,39 +338,208 @@
                     </div>`;
             }
         }
+
+        preencherAgendaAtual();
     }
 
-    // Funções de Atualização (Simulando Gravação no Firebase)
-    function atualizarAgenda() {
-        alert("Agenda atualizada para o dia selecionado!");
+    function getChaveAgenda() {
+        const ano = document.getElementById('ano').value;
+        const mes = String(document.getElementById('mes').value).padStart(2, '0');
+        const dia = String(document.getElementById('dia').value).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
     }
 
-    function atualizarServicos() {
-        const nome = document.getElementById('serv_nome').value;
-        const preco = document.getElementById('serv_preco').value;
-        const horas = document.getElementById('serv_horas').value;
-        if(nome) {
-            document.getElementById('corpoServicos').innerHTML += `<tr><td>${nome}</td><td>R$ ${preco}</td><td>${horas}h</td></tr>`;
-            document.getElementById('serv_nome').value = "";
+    function preencherAgendaAtual() {
+        if (!registroAtual || !registroAtual.agenda) {
+            return;
+        }
+
+        const agendaDia = registroAtual.agenda[getChaveAgenda()] || {};
+        Object.entries(agendaDia).forEach(([hora, cliente]) => {
+            const campo = document.getElementById(`cli_${hora.replace(':', '')}`);
+            if (campo) {
+                campo.value = cliente;
+            }
+        });
+    }
+
+    function renderizarServicos() {
+        const corpo = document.getElementById('corpoServicos');
+        corpo.innerHTML = '';
+
+        const servicos = Array.isArray(registroAtual?.tabelaServicos) ? registroAtual.tabelaServicos : [];
+        servicos.forEach((servico) => {
+            corpo.innerHTML += `<tr><td>${servico.nome}</td><td>R$ ${servico.preco}</td><td>${servico.tempo}</td></tr>`;
+        });
+    }
+
+    function renderizarProdutos() {
+        const corpo = document.getElementById('corpoProdutos');
+        corpo.innerHTML = '';
+
+        const produtos = Array.isArray(registroAtual?.tabelaProdutos) ? registroAtual.tabelaProdutos : [];
+        produtos.forEach((produto) => {
+            corpo.innerHTML += `<tr><td>${produto.nome}</td><td>${produto.estoque}</td><td>R$ ${produto.preco}</td></tr>`;
+        });
+    }
+
+    async function atualizarAgenda() {
+        if (!referenciaAtual) {
+            alert('Perfil ainda nao carregado.');
+            return;
+        }
+
+        const agendaDia = {};
+        for(let h = 8; h <= 19; h++) {
+            for(let m of ['00', '30']) {
+                const hora = `${h.toString().padStart(2, '0')}:${m}`;
+                const campo = document.getElementById(`cli_${hora.replace(':','')}`);
+                if (campo && campo.value.trim()) {
+                    agendaDia[hora] = campo.value.trim();
+                }
+            }
+        }
+
+        const agenda = {
+            ...(registroAtual.agenda || {}),
+            [getChaveAgenda()]: agendaDia,
+        };
+
+        try {
+            await referenciaAtual.set({ agenda }, { merge: true });
+            registroAtual.agenda = agenda;
+            alert('Agenda atualizada para o dia selecionado!');
+        } catch (error) {
+            console.error('Erro ao salvar agenda:', error);
+            alert('Erro ao salvar agenda.');
         }
     }
 
-    function atualizarProdutos() {
+    async function atualizarServicos() {
+        if (!referenciaAtual) {
+            alert('Perfil ainda nao carregado.');
+            return;
+        }
+
+        const nome = document.getElementById('serv_nome').value;
+        const preco = document.getElementById('serv_preco').value;
+        const horas = document.getElementById('serv_horas').value;
+        if (!nome) {
+            return;
+        }
+
+        const tabelaServicos = [
+            ...(Array.isArray(registroAtual.tabelaServicos) ? registroAtual.tabelaServicos : []),
+            {
+                nome: nome.trim(),
+                preco: preco.trim(),
+                tempo: horas.trim(),
+            },
+        ];
+
+        try {
+            await referenciaAtual.set({ tabelaServicos }, { merge: true });
+            registroAtual.tabelaServicos = tabelaServicos;
+            renderizarServicos();
+            document.getElementById('serv_nome').value = "";
+            document.getElementById('serv_preco').value = "";
+            document.getElementById('serv_horas').value = "";
+        } catch (error) {
+            console.error('Erro ao salvar servicos:', error);
+            alert('Erro ao salvar servicos.');
+        }
+    }
+
+    async function atualizarProdutos() {
+        if (!referenciaAtual) {
+            alert('Perfil ainda nao carregado.');
+            return;
+        }
+
         const nome = document.getElementById('prod_nome').value;
         const qtd = document.getElementById('prod_estoque').value;
         const preco = document.getElementById('prod_preco').value;
-        if(nome) {
-            document.getElementById('corpoProdutos').innerHTML += `<tr><td>${nome}</td><td>${qtd}</td><td>R$ ${preco}</td></tr>`;
+        if (!nome) {
+            return;
+        }
+
+        const tabelaProdutos = [
+            ...(Array.isArray(registroAtual.tabelaProdutos) ? registroAtual.tabelaProdutos : []),
+            {
+                nome: nome.trim(),
+                estoque: qtd.trim(),
+                preco: preco.trim(),
+            },
+        ];
+
+        try {
+            await referenciaAtual.set({ tabelaProdutos }, { merge: true });
+            registroAtual.tabelaProdutos = tabelaProdutos;
+            renderizarProdutos();
             document.getElementById('prod_nome').value = "";
+            document.getElementById('prod_estoque').value = "";
+            document.getElementById('prod_preco').value = "";
+        } catch (error) {
+            console.error('Erro ao salvar produtos:', error);
+            alert('Erro ao salvar produtos.');
+        }
+    }
+
+    async function carregarPerfil() {
+        document.getElementById('idProfissional').innerText = "ID: " + idUsuario;
+
+        try {
+            const perfilAtual = await resolverPerfilAtual();
+            identificadorAtual = perfilAtual.id;
+            tipoAtual = perfilAtual.tipo;
+            await carregarRelacoesFavorito();
+
+            let registro = null;
+
+            const docDireto = await db.collection('usuarios').doc(idUsuario).get();
+            if (docDireto.exists) {
+                registro = { idDoc: docDireto.id, ...docDireto.data() };
+                referenciaAtual = docDireto.ref;
+            } else {
+                const busca = await db.collection('usuarios').where('idSistema', '==', idUsuario).limit(1).get();
+                if (!busca.empty) {
+                    const doc = busca.docs[0];
+                    registro = { idDoc: doc.id, ...doc.data() };
+                    referenciaAtual = doc.ref;
+                }
+            }
+
+            if (!registro) {
+                return;
+            }
+
+            registroAtual = registro;
+            const nomeExibicao = registro.fantasia || registro.nome || 'Profissional';
+            document.getElementById('nomeProfissional').innerText = nomeExibicao;
+            document.getElementById('avatarLetra').innerText = nomeExibicao.charAt(0).toUpperCase();
+            document.getElementById('idProfissional').innerText = 'ID: ' + (registro.idSistema || registro.idDoc || idUsuario);
+            renderizarServicos();
+            renderizarProdutos();
+            preencherAgendaAtual();
+            atualizarBotaoFavorito();
+        } catch (error) {
+            console.error('Erro ao carregar perfil:', error);
         }
     }
 
     // Ao carregar a página
     window.onload = () => {
-        document.getElementById('idProfissional').innerText = "ID: " + idUsuario;
         carregarSlotsAgenda();
-        // Aqui você faria um db.collection("usuarios").where("idSistema", "==", idUsuario).get() para carregar o nome.
+        document.getElementById('ano').addEventListener('change', carregarSlotsAgenda);
+        document.getElementById('mes').addEventListener('change', carregarSlotsAgenda);
+        document.getElementById('dia').addEventListener('change', carregarSlotsAgenda);
+        document.getElementById('btnFavoritoPerfil').addEventListener('click', alternarFavoritoPerfil);
+        carregarPerfil();
     };
+
+    auth.onAuthStateChanged(() => {
+        atualizarIdentificadorAtual();
+    });
 </script>
 </body>
 </html>

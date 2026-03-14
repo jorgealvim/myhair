@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Cadastro Geral</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; color: #000; }
-        header { background-color: #fff; padding: 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        main { padding: 20px; max-width: 550px; margin: 0 auto; }
-        .form-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h2 { font-size: 14px; border-bottom: 2px solid #b3e5fc; padding-bottom: 8px; margin-top: 25px; text-transform: uppercase; }
-        label { display: block; margin-top: 12px; font-weight: bold; font-size: 11px; }
-        input, select { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
+        header { background-color: #fff; padding: 16px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,0.08); border-radius: 12px; margin-bottom: 12px; max-width: 320px; margin-left: auto; margin-right: auto; }
+        main { padding: 10px; max-width: 320px; margin: 0 auto; }
+        .form-card { background: white; padding: 14px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2 { font-size: 13px; border-bottom: 2px solid #b3e5fc; padding-bottom: 6px; margin-top: 6px; text-transform: uppercase; }
+        label { display: block; margin-top: 8px; font-weight: bold; font-size: 11px; }
+        input, select { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
         
         /* Estilo para Grades de Ícones/Checkboxes */
         .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; margin-top: 10px; }
@@ -36,7 +37,7 @@
         .hidden { display: none; }
         
         .btn-voltar { background: #eee; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
-        .btn-save { width: 100%; padding: 16px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; }
+        .btn-save { width: 100%; padding: 10px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; }
         .btn-row { display: flex; gap: 10px; margin-top: 15px; }
         .btn-edit { flex: 1; padding: 12px; background: #fff; border: 1px solid #b3e5fc; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-delete { flex: 1; padding: 12px; background: #fff; border: 1px solid #ffcdd2; border-radius: 8px; cursor: pointer; font-weight: bold; color: #d32f2f; }
@@ -168,7 +169,10 @@
         messagingSenderId: "672931938550",
         appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
     let idDocFirebase = null; 
@@ -217,6 +221,12 @@
     async function salvarCadastro() {
         const senha = document.getElementById('senha').value;
         const confirmar = document.getElementById('confirmarSenha').value;
+        const email = document.getElementById('email').value.trim();
+
+        if (!email) {
+            alert("Informe o e-mail para criar a conta.");
+            return;
+        }
 
         if (senha !== confirmar) {
             alert("As senhas não coincidem!");
@@ -243,7 +253,7 @@
             nome: document.getElementById('nome').value,
             fantasia: document.getElementById('fantasia').value || "",
             whats: document.getElementById('whats').value,
-            email: document.getElementById('email').value,
+            email: email,
             senha: senha,
             cep: document.getElementById('cep').value,
             rua: document.getElementById('rua').value,
@@ -262,13 +272,18 @@
                 await db.collection("usuarios").doc(idDocFirebase).update(dados);
                 alert("Cadastro atualizado!");
             } else {
+                await auth.createUserWithEmailAndPassword(email, senha);
                 const docRef = await db.collection("usuarios").add(dados);
                 idDocFirebase = docRef.id;
                 alert("Cadastro realizado com sucesso!");
             }
             window.location.href = "perfil.html";
         } catch(e) {
-            alert("Erro ao salvar no banco de dados.");
+            if (e && e.code === 'auth/operation-not-allowed') {
+                alert("Erro: login por E-mail/Senha desativado no Firebase. Ative em Authentication > Sign-in method > Email/Password.");
+            } else {
+                alert("Erro ao salvar: " + (e.code || e.message));
+            }
             btn.innerText = "SALVAR E IR PARA PREÇOS";
         }
     }

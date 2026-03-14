@@ -5,49 +5,47 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Cadastro Cliente</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; color: #000; }
-        header { background-color: #fff; padding: 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        main { padding: 20px; max-width: 450px; margin: 0 auto; }
-        .form-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h2 { font-size: 14px; border-bottom: 2px solid #b3e5fc; padding-bottom: 8px; margin-top: 10px; text-transform: uppercase; text-align: center; }
-        label { display: block; margin-top: 15px; font-weight: bold; font-size: 11px; }
-        input { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; }
-        .btn-save { width: 100%; padding: 16px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 25px; font-size: 16px; }
-        .links-aux { text-align: center; margin-top: 20px; font-size: 13px; }
+        header { background-color: #fff; padding: 16px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,0.08); border-radius: 12px; margin-bottom: 12px; max-width: 320px; margin-left: auto; margin-right: auto; }
+        main { padding: 10px; max-width: 320px; margin: 0 auto; }
+        .form-card { background: white; padding: 14px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h2 { font-size: 13px; border-bottom: 2px solid #b3e5fc; padding-bottom: 6px; margin-top: 6px; text-transform: uppercase; text-align: center; }
+        label { display: block; margin-top: 8px; font-weight: bold; font-size: 11px; }
+        input { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+        .btn-save { width: 100%; padding: 10px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; }
+        .links-aux { text-align: center; margin-top: 10px; font-size: 12px; }
         .links-aux a { color: #0288d1; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
 
-<header><h1>MY HAIR</h1><p>Cadastro de Cliente</p></header>
-
-<main>
-    <div class="form-card">
-        <form id="formCliente">
-            <h2>Crie sua conta</h2>
-            
-            <label>NOME COMPLETO</label>
-            <input type="text" id="nomeCliente" placeholder="Digite seu nome">
-
-            <label>CPF</label>
-            <input type="text" id="cpfCliente" placeholder="000.000.000-00">
-
-            <label>WHATSAPP</label>
-            <input type="text" id="whatsCliente" placeholder="(00) 00000-0000">
-
-            <label>CRIAR SENHA</label>
-            <input type="password" id="senhaCliente" placeholder="******">
-
-            <button type="button" class="btn-save" onclick="salvarCliente()">FINALIZAR CADASTRO</button>
-            
-            <div class="links-aux">
-                Já tem conta? <a href="index.html">Fazer Login</a>
-            </div>
-        </form>
-    </div>
-</main>
+<div class="login-card" style="margin: 16px auto;">
+  <header><h1>MY HAIR</h1><p>Cadastro de Cliente</p></header>
+  <main>
+      <div class="form-card">
+          <form id="formCliente">
+              <h2>Crie sua conta</h2>
+              <label>NOME COMPLETO</label>
+              <input type="text" id="nomeCliente" placeholder="Digite seu nome">
+              <label>CPF</label>
+              <input type="text" id="cpfCliente" placeholder="000.000.000-00">
+              <label>WHATSAPP</label>
+              <input type="text" id="whatsCliente" placeholder="(00) 00000-0000">
+              <label>E-MAIL</label>
+              <input type="email" id="emailCliente" placeholder="seuemail@exemplo.com">
+              <label>CRIAR SENHA</label>
+              <input type="password" id="senhaCliente" placeholder="******">
+              <button type="button" class="btn-save" onclick="salvarCliente()">FINALIZAR CADASTRO</button>
+              <div class="links-aux">
+                  Já tem conta? <a href="index.html">Fazer Login</a>
+              </div>
+          </form>
+      </div>
+  </main>
+</div>
 
 <script>
     // Configurações do Firebase
@@ -59,16 +57,20 @@
         messagingSenderId: "672931938550",
         appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
     async function salvarCliente() {
         const nome = document.getElementById('nomeCliente').value;
         const cpf = document.getElementById('cpfCliente').value;
         const whats = document.getElementById('whatsCliente').value;
+        const email = document.getElementById('emailCliente').value.trim();
         const senha = document.getElementById('senhaCliente').value;
 
-        if (!nome || !cpf || !whats || !senha) {
+        if (!nome || !cpf || !whats || !email || !senha) {
             alert("Por favor, preencha todos os campos.");
             return;
         }
@@ -82,17 +84,21 @@
             nome: nome,
             cpf: cpf,
             whatsapp: whats,
-            senha: senha,
+            email: email,
             dataCadastro: new Date().toISOString()
         };
 
         try {
-            // Salvando na coleção separada "clientes"
+            await auth.createUserWithEmailAndPassword(email, senha);
             await db.collection("clientes").add(dados);
             alert("Cadastro realizado com sucesso! Bem-vindo ao MY HAIR.");
             window.location.href = "visaogeral.html";
         } catch(e) {
-            alert("Erro ao realizar cadastro.");
+            if (e && e.code === 'auth/operation-not-allowed') {
+                alert("Erro: login por E-mail/Senha desativado no Firebase. Ative em Authentication > Sign-in method > Email/Password.");
+            } else {
+                alert("Erro ao realizar cadastro: " + (e.code || e.message));
+            }
             btn.innerText = "FINALIZAR CADASTRO";
             btn.disabled = false;
         }

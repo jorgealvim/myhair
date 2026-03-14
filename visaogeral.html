@@ -5,74 +5,121 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Explorar</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; padding-bottom: 30px; }
-        
-        header { background: white; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; }
-        
-        .categorias-scroll { display: flex; gap: 15px; overflow-x: auto; padding: 15px; background: white; border-bottom: 1px solid #eee; scrollbar-width: none; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; min-height: 100vh; padding: 20px; }
+
+        .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
+        .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
+        header { background: white; padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+
+        .categorias-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 12px; scrollbar-width: none; }
         .categorias-scroll::-webkit-scrollbar { display: none; } /* Esconde barra no Chrome/Safari */
 
-        .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 70px; cursor: pointer; transition: 0.3s; opacity: 0.5; }
-        .cat-item.active { opacity: 1; transform: scale(1.1); color: var(--dark-blue); }
-        .cat-item span { font-size: 24px; }
-        .cat-item p { margin: 5px 0 0; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .filtros-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .campo-busca { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+        .acoes-filtro { display: flex; gap: 8px; }
+        .btn-filtro { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #f3f9fc; color: var(--dark-blue); font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-filtro.ativo { background: var(--blue); color: #000; }
+        .btn-filtro.secundario { flex: 0 0 auto; min-width: 110px; }
+        .btn-modo { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #f7f7f7; color: #666; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-modo.ativo { background: #eaf6fd; color: var(--dark-blue); }
+        .texto-apoio { font-size: 11px; color: #777; text-align: center; margin-top: -2px; }
 
-        .lista-profissionais { max-width: 600px; margin: 0 auto; padding: 15px; }
+        .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 50px; cursor: pointer; transition: 0.3s; opacity: 0.5; }
+        .cat-item.active { opacity: 1; transform: scale(1.1); color: var(--dark-blue); }
+        .cat-item span { font-size: 18px; }
+        .cat-item p { margin: 3px 0 0; font-size: 9px; font-weight: bold; text-transform: uppercase; }
+
+        .lista-profissionais { padding: 0; }
         
-        .card-parceiro { background: white; border-radius: 15px; padding: 15px; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; gap: 15px; align-items: center; border-left: 5px solid var(--blue); }
+        .card-parceiro { background: white; border-radius: 10px; padding: 8px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; gap: 8px; align-items: center; border-left: 4px solid var(--blue); }
         .card-parceiro.vip { border-left-color: #ffd700; }
         
-        .icone-parceiro { width: 60px; height: 60px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: bold; color: var(--dark-blue); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .icone-parceiro { width: 36px; height: 36px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: var(--dark-blue); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0; }
         
         .info-parceiro { flex-grow: 1; min-width: 0; } /* min-width evita quebra de layout com nomes longos */
-        .info-parceiro h3 { margin: 0; font-size: 16px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .info-parceiro h3 { margin: 0; font-size: 13px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .info-parceiro .local { font-size: 11px; color: #888; margin: 3px 0; }
+        .status-funcionamento { display: inline-block; margin-top: 2px; font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 999px; }
+        .status-funcionamento.aberto { background: #e7f8ed; color: #1c7b3a; }
+        .status-funcionamento.fechado { background: #fdeaea; color: #a13434; }
+        .status-funcionamento.indefinido { background: #f1f1f1; color: #666; }
         
         .servicos-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
         .tag-serv { font-size: 9px; padding: 2px 6px; background: #e1f5fe; border-radius: 4px; color: #0277bd; font-weight: bold; text-transform: uppercase; }
 
-        .btn-perfil { background: var(--blue); color: #000; text-decoration: none; padding: 10px 15px; border-radius: 8px; font-size: 11px; font-weight: bold; flex-shrink: 0; }
+        .acoes-card { display: flex; flex-direction: column; gap: 6px; align-items: center; }
+        .btn-perfil { background: var(--blue); color: #000; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; flex-shrink: 0; }
+        .btn-mapa { background: #eef7ff; color: #0a5a91; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: bold; border: 1px solid #cfe7ff; }
+        .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .btn-favorito.ativo { background: #ffe48a; color: #5b4700; }
+
+        @media (max-width: 420px) {
+            body { padding: 12px; }
+            .login-card { padding: 16px; }
+            .card-parceiro { align-items: flex-start; }
+            .acoes-card { align-self: center; width: 100%; }
+            .btn-perfil, .btn-favorito { width: 100%; text-align: center; box-sizing: border-box; }
+        }
     </style>
 </head>
 <body>
 
-<header>
-    <h1 style="margin:0; font-size: 20px;">MY HAIR</h1>
-</header>
+<div class="page-shell">
+    <div class="login-card">
+        <header>
+            <h1 style="margin:0; font-size: 20px;">MY HAIR</h1>
+        </header>
 
-<div class="categorias-scroll" id="menuCategorias">
-    <div class="cat-item active" onclick="filtrarPorServico('todos', this)">
-        <span>🌟</span><p>Todos</p>
-    </div>
-    <div class="cat-item" onclick="filtrarPorServico('cabelo', this)">
-        <span>💇‍♂️</span><p>Cabelo</p>
-    </div>
-    <div class="cat-item" onclick="filtrarPorServico('pe', this)">
-        <span>👣</span><p>Pé</p>
-    </div>
-    <div class="cat-item" onclick="filtrarPorServico('mao', this)">
-        <span>💅</span><p>Mão</p>
-    </div>
-    <div class="cat-item" onclick="filtrarPorServico('sobrancelha', this)">
-        <span>👁️</span><p>Sobrancelha</p>
-    </div>
-    <div class="cat-item" onclick="filtrarPorServico('maquiagem', this)">
-        <span>💄</span><p>Make</p>
-    </div>
-    <div class="cat-item" onclick="filtrarPorServico('barba', this)">
-        <span>🧔</span><p>Barba</p>
-    </div>
-    <div class="cat-item" onclick="filtrarPorServico('massagem', this)">
-        <span>💆‍♀️</span><p>Massagem</p>
+        <div class="filtros-box">
+            <input type="search" id="campoBusca" class="campo-busca" placeholder="Buscar por nome, bairro ou serviço">
+            <div class="acoes-filtro">
+                <button id="btnTodos" class="btn-filtro ativo" type="button">Todos</button>
+                <button id="btnFavoritos" class="btn-filtro" type="button">Preferidos</button>
+                <button id="btnAbertos" class="btn-filtro secundario" type="button">Abertos agora</button>
+            </div>
+            <div class="acoes-filtro">
+                <button id="btnVerSaloes" class="btn-modo ativo" type="button">Ver Salões</button>
+                <button id="btnVerClientes" class="btn-modo" type="button">Ver Clientes</button>
+            </div>
+            <div class="texto-apoio" id="textoModoFavorito">Favoritos valem para ambos: cliente e salão.</div>
+        </div>
+
+        <div class="categorias-scroll" id="menuCategorias">
+            <div class="cat-item active" onclick="filtrarPorServico('todos', this)">
+                <span>🌟</span><p>Todos</p>
+            </div>
+            <div class="cat-item" onclick="filtrarPorServico('cabelo', this)">
+                <span>💇‍♂️</span><p>Cabelo</p>
+            </div>
+            <div class="cat-item" onclick="filtrarPorServico('pe', this)">
+                <span>👣</span><p>Pé</p>
+            </div>
+            <div class="cat-item" onclick="filtrarPorServico('mao', this)">
+                <span>💅</span><p>Mão</p>
+            </div>
+            <div class="cat-item" onclick="filtrarPorServico('sobrancelha', this)">
+                <span>👁️</span><p>Sobrancelha</p>
+            </div>
+            <div class="cat-item" onclick="filtrarPorServico('maquiagem', this)">
+                <span>💄</span><p>Make</p>
+            </div>
+            <div class="cat-item" onclick="filtrarPorServico('barba', this)">
+                <span>🧔</span><p>Barba</p>
+            </div>
+            <div class="cat-item" onclick="filtrarPorServico('massagem', this)">
+                <span>💆‍♀️</span><p>Massagem</p>
+            </div>
+        </div>
+
+        <main class="lista-profissionais" id="listaProfissionais">
+            <p style="text-align: center; color: #666;">Buscando profissionais...</p>
+        </main>
     </div>
 </div>
-
-<main class="lista-profissionais" id="listaProfissionais">
-    <p style="text-align: center; color: #666;">Buscando profissionais...</p>
-</main>
 
 <script>
     // Substitua pelos seus dados reais do Firebase
@@ -88,26 +135,310 @@
     if (!firebase.apps.length) {
         firebase.initializeApp(firebaseConfig);
     }
+    const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let profissionaisCache = [];
+    let saloesCache = [];
+    let clientesCache = [];
+    let listaAtualCache = [];
+    let categoriaAtual = 'todos';
+    let somenteFavoritos = false;
+    let somenteAbertos = false;
+    let identificadorAtual = 'anonimo';
+    let tipoAtual = 'cliente';
+    let modoVisualizacao = 'salao';
+    let favoritosSaida = new Set();
+    let favoritosEntrada = new Set();
+
+    function atualizarIdentificadorAtual() {
+        const usuarioAuth = auth.currentUser;
+        identificadorAtual = usuarioAuth?.uid || localStorage.getItem('usuarioID') || 'anonimo';
+    }
+
+    function getFavoritos() {
+        atualizarIdentificadorAtual();
+        try {
+            const salvo = localStorage.getItem(`myhair_favoritos_${identificadorAtual}`);
+            return new Set(JSON.parse(salvo || '[]'));
+        } catch (error) {
+            return new Set();
+        }
+    }
+
+    function salvarFavoritos(favoritos) {
+        atualizarIdentificadorAtual();
+        localStorage.setItem(`myhair_favoritos_${identificadorAtual}`, JSON.stringify(Array.from(favoritos)));
+    }
+
+    function getIdentificadorParceiro(parceiro) {
+        return parceiro.entityId;
+    }
+
+    function parseHoraMinutos(valor) {
+        if (!valor) {
+            return null;
+        }
+        const texto = String(valor).trim();
+        const match = texto.match(/^(\d{1,2}):(\d{2})$/);
+        if (!match) {
+            return null;
+        }
+        const horas = Number(match[1]);
+        const minutos = Number(match[2]);
+        if (Number.isNaN(horas) || Number.isNaN(minutos) || horas < 0 || horas > 23 || minutos < 0 || minutos > 59) {
+            return null;
+        }
+        return (horas * 60) + minutos;
+    }
+
+    function extrairJanelaFuncionamento(parceiro) {
+        let abertura = parceiro.horarioAbertura || parceiro.abertura || parceiro.horaAbertura;
+        let fechamento = parceiro.horarioFechamento || parceiro.fechamento || parceiro.horaFechamento;
+
+        if ((!abertura || !fechamento) && parceiro.horarioFuncionamento) {
+            const bruto = String(parceiro.horarioFuncionamento);
+            const partes = bruto.split(/-|ate|às|as/i).map((v) => v.trim()).filter(Boolean);
+            if (!abertura && partes[0]) {
+                abertura = partes[0];
+            }
+            if (!fechamento && partes[1]) {
+                fechamento = partes[1];
+            }
+        }
+
+        const ini = parseHoraMinutos(abertura);
+        const fim = parseHoraMinutos(fechamento);
+        if (ini === null || fim === null) {
+            return null;
+        }
+
+        return {
+            inicio: ini,
+            fim,
+            texto: `${String(Math.floor(ini / 60)).padStart(2, '0')}:${String(ini % 60).padStart(2, '0')} - ${String(Math.floor(fim / 60)).padStart(2, '0')}:${String(fim % 60).padStart(2, '0')}`,
+        };
+    }
+
+    function obterStatusFuncionamento(parceiro) {
+        if (parceiro.entityType !== 'salao') {
+            return null;
+        }
+
+        const janela = extrairJanelaFuncionamento(parceiro);
+        if (!janela) {
+            return {
+                classe: 'indefinido',
+                texto: 'Horário não informado',
+            };
+        }
+
+        const agora = new Date();
+        const agoraMinutos = (agora.getHours() * 60) + agora.getMinutes();
+        const aberto = janela.inicio <= janela.fim
+            ? (agoraMinutos >= janela.inicio && agoraMinutos <= janela.fim)
+            : (agoraMinutos >= janela.inicio || agoraMinutos <= janela.fim);
+
+        return {
+            classe: aberto ? 'aberto' : 'fechado',
+            texto: aberto ? `Aberto agora (${janela.texto})` : `Fechado agora (${janela.texto})`,
+        };
+    }
+
+    function montarEnderecoMapa(parceiro) {
+        const partes = [
+            parceiro.endereco,
+            parceiro.numero,
+            parceiro.bairro,
+            parceiro.cidade,
+            parceiro.uf,
+        ].filter(Boolean);
+
+        if (partes.length === 0) {
+            return parceiro.fantasia || parceiro.nome || 'Salao de beleza';
+        }
+
+        return partes.join(', ');
+    }
+
+    function gerarLinkGoogleMaps(parceiro) {
+        const endereco = montarEnderecoMapa(parceiro);
+        return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(endereco)}`;
+    }
+
+    function comporRelacaoId(deId, paraId) {
+        const deSafe = String(deId).replace(/[^a-zA-Z0-9_-]/g, '_');
+        const paraSafe = String(paraId).replace(/[^a-zA-Z0-9_-]/g, '_');
+        return `fav_${deSafe}__${paraSafe}`;
+    }
+
+    async function resolverPerfilAtual() {
+        const usuarioAuth = auth.currentUser;
+        if (usuarioAuth?.email) {
+            const buscaSalao = await db.collection('usuarios').where('email', '==', usuarioAuth.email).limit(1).get();
+            if (!buscaSalao.empty) {
+                const doc = buscaSalao.docs[0];
+                const dados = doc.data();
+                return {
+                    id: dados.idSistema || doc.id,
+                    tipo: 'salao',
+                };
+            }
+
+            const buscaCliente = await db.collection('clientes').where('email', '==', usuarioAuth.email).limit(1).get();
+            if (!buscaCliente.empty) {
+                const doc = buscaCliente.docs[0];
+                return {
+                    id: doc.id,
+                    tipo: 'cliente',
+                };
+            }
+        }
+
+        const idLocal = localStorage.getItem('usuarioID');
+        if (idLocal) {
+            return {
+                id: idLocal,
+                tipo: 'salao',
+            };
+        }
+
+        return {
+            id: `anonimo_${identificadorAtual}`,
+            tipo: 'cliente',
+        };
+    }
+
+    async function carregarRelacoesFavorito() {
+        favoritosSaida = new Set();
+        favoritosEntrada = new Set();
+
+        const saida = await db
+            .collection('favoritos')
+            .where('deId', '==', identificadorAtual)
+            .where('deTipo', '==', tipoAtual)
+            .get();
+
+        saida.forEach((doc) => {
+            const dados = doc.data();
+            favoritosSaida.add(dados.paraId);
+        });
+
+        const entrada = await db
+            .collection('favoritos')
+            .where('paraId', '==', identificadorAtual)
+            .where('paraTipo', '==', tipoAtual)
+            .get();
+
+        entrada.forEach((doc) => {
+            const dados = doc.data();
+            favoritosEntrada.add(dados.deId);
+        });
+    }
+
+    function atualizarModoVisualizacao() {
+        document.getElementById('btnVerSaloes').classList.toggle('ativo', modoVisualizacao === 'salao');
+        document.getElementById('btnVerClientes').classList.toggle('ativo', modoVisualizacao === 'cliente');
+        document.getElementById('menuCategorias').style.display = modoVisualizacao === 'salao' ? 'flex' : 'none';
+        if (modoVisualizacao !== 'salao') {
+            categoriaAtual = 'todos';
+            document.querySelectorAll('.cat-item').forEach((item) => item.classList.remove('active'));
+            const primeiro = document.querySelector('.cat-item');
+            if (primeiro) {
+                primeiro.classList.add('active');
+            }
+        }
+    }
+
+    function aplicarFiltros() {
+        const busca = document.getElementById('campoBusca').value.trim().toLowerCase();
+        const favoritosLocais = getFavoritos();
+        listaAtualCache = modoVisualizacao === 'salao' ? saloesCache : clientesCache;
+
+        const filtrados = listaAtualCache.filter((parceiro) => {
+            if (categoriaAtual !== 'todos') {
+                const possuiCategoria = Array.isArray(parceiro.servicosOferecidos) && parceiro.servicosOferecidos.includes(categoriaAtual);
+                if (!possuiCategoria) {
+                    return false;
+                }
+            }
+
+            const idAlvo = getIdentificadorParceiro(parceiro);
+            const favoritoBidirecional = favoritosSaida.has(idAlvo) || favoritosEntrada.has(idAlvo) || favoritosLocais.has(idAlvo);
+            if (somenteFavoritos && !favoritoBidirecional) {
+                return false;
+            }
+
+            if (somenteAbertos && modoVisualizacao === 'salao') {
+                const status = obterStatusFuncionamento(parceiro);
+                if (!status || status.classe !== 'aberto') {
+                    return false;
+                }
+            }
+
+            if (!busca) {
+                return true;
+            }
+
+            const textoBusca = [
+                parceiro.fantasia,
+                parceiro.nome,
+                parceiro.bairro,
+                parceiro.cidade,
+                Array.isArray(parceiro.servicosOferecidos) ? parceiro.servicosOferecidos.join(' ') : '',
+            ].join(' ').toLowerCase();
+
+            return textoBusca.includes(busca);
+        });
+
+        renderizar(filtrados);
+    }
 
     async function carregarProfissionais() {
         const lista = document.getElementById('listaProfissionais');
         try {
-            // Buscamos apenas documentos que tenham o campo 'nome' ou 'fantasia' para evitar lixo
-            const snapshot = await db.collection("usuarios").get();
-            profissionaisCache = [];
-            
-            snapshot.forEach(doc => {
+            const perfil = await resolverPerfilAtual();
+            identificadorAtual = perfil.id;
+            tipoAtual = perfil.tipo;
+
+            const [saloesSnap, clientesSnap] = await Promise.all([
+                db.collection('usuarios').get(),
+                db.collection('clientes').get(),
+            ]);
+
+            saloesCache = [];
+            clientesCache = [];
+
+            saloesSnap.forEach((doc) => {
                 const dados = doc.data();
-                // Só adiciona se tiver um identificador básico
                 if (dados.nome || dados.fantasia) {
-                    profissionaisCache.push({ idDoc: doc.id, ...dados });
+                    saloesCache.push({
+                        ...dados,
+                        idDoc: doc.id,
+                        entityType: 'salao',
+                        entityId: dados.idSistema || doc.id,
+                    });
                 }
             });
+
+            clientesSnap.forEach((doc) => {
+                const dados = doc.data();
+                if (dados.nome) {
+                    clientesCache.push({
+                        ...dados,
+                        idDoc: doc.id,
+                        entityType: 'cliente',
+                        entityId: doc.id,
+                        fantasia: dados.nome,
+                        servicosOferecidos: dados.servicosOferecidos || [],
+                    });
+                }
+            });
+
+            modoVisualizacao = tipoAtual === 'salao' ? 'cliente' : 'salao';
+            atualizarModoVisualizacao();
+            await carregarRelacoesFavorito();
             
-            renderizar(profissionaisCache);
+            aplicarFiltros();
         } catch (e) {
             console.error(e);
             lista.innerHTML = "<p style='text-align:center;'>Erro ao carregar dados. Verifique o console.</p>";
@@ -116,6 +447,7 @@
 
     function renderizar(dados) {
         const lista = document.getElementById('listaProfissionais');
+        const favoritosLocais = getFavoritos();
         lista.innerHTML = "";
 
         if (dados.length === 0) {
@@ -128,6 +460,12 @@
             const inicial = nomeDisp.charAt(0).toUpperCase();
             const bairro = p.bairro || "Bairro não informado";
             const cidade = p.cidade || "";
+            const statusFuncionamento = obterStatusFuncionamento(p);
+            const linkMapa = gerarLinkGoogleMaps(p);
+            const idParceiro = getIdentificadorParceiro(p);
+            const favorito = favoritosSaida.has(idParceiro) || favoritosEntrada.has(idParceiro) || favoritosLocais.has(idParceiro);
+            const favoritouVoce = favoritosEntrada.has(idParceiro);
+            const euFavorito = favoritosSaida.has(idParceiro);
             
             let tagsHtml = "";
             if (p.servicosOferecidos && Array.isArray(p.servicosOferecidos)) {
@@ -142,29 +480,95 @@
                     <div class="info-parceiro">
                         <h3>${nomeDisp}</h3>
                         <p class="local">📍 ${bairro} ${cidade ? '- ' + cidade : ''}</p>
+                        ${statusFuncionamento ? `<p class="status-funcionamento ${statusFuncionamento.classe}">${statusFuncionamento.texto}</p>` : ''}
+                        ${favoritouVoce ? '<p class="local">⭐ Favoritou você</p>' : ''}
                         <div class="servicos-tags">${tagsHtml}</div>
                     </div>
-                    <a href="perfil.html?id=${p.idSistema || p.idDoc}&modo=cliente" class="btn-perfil">VER</a>
+                    <div class="acoes-card">
+                        <button type="button" class="btn-favorito ${favorito ? 'ativo' : ''}" onclick="alternarFavorito('${idParceiro}', '${p.entityType}')">${euFavorito ? 'DESFAVORITAR' : (favoritouVoce ? 'RETRIBUIR' : 'FAVORITAR')}</button>
+                        <a href="${linkMapa}" target="_blank" rel="noopener noreferrer" class="btn-mapa">MAPA</a>
+                        <a href="perfil.html?id=${p.idSistema || p.idDoc}&modo=cliente" class="btn-perfil">VER</a>
+                    </div>
                 </div>
             `;
         });
     }
 
+    async function alternarFavorito(idParceiro, tipoAlvo) {
+        if (!identificadorAtual || identificadorAtual.startsWith('anonimo_')) {
+            alert('Para favoritar, faça login ou cadastro.');
+            return;
+        }
+
+        const favoritos = getFavoritos();
+        const jaFavorito = favoritosSaida.has(idParceiro);
+        const docId = comporRelacaoId(`${tipoAtual}_${identificadorAtual}`, `${tipoAlvo}_${idParceiro}`);
+        const ref = db.collection('favoritos').doc(docId);
+
+        if (jaFavorito) {
+            await ref.delete();
+            favoritosSaida.delete(idParceiro);
+            favoritos.delete(idParceiro);
+        } else {
+            await ref.set({
+                deId: identificadorAtual,
+                deTipo: tipoAtual,
+                paraId: idParceiro,
+                paraTipo: tipoAlvo,
+                criadoEm: new Date().toISOString(),
+            });
+            favoritosSaida.add(idParceiro);
+            favoritos.add(idParceiro);
+        }
+
+        salvarFavoritos(favoritos);
+        aplicarFiltros();
+    }
+
     function filtrarPorServico(servico, elemento) {
         document.querySelectorAll('.cat-item').forEach(i => i.classList.remove('active'));
         elemento.classList.add('active');
-
-        if (servico === 'todos') {
-            renderizar(profissionaisCache);
-        } else {
-            const filtrados = profissionaisCache.filter(p => 
-                p.servicosOferecidos && 
-                Array.isArray(p.servicosOferecidos) && 
-                p.servicosOferecidos.includes(servico)
-            );
-            renderizar(filtrados);
-        }
+        categoriaAtual = servico;
+        aplicarFiltros();
     }
+
+    document.getElementById('campoBusca').addEventListener('input', aplicarFiltros);
+    document.getElementById('btnTodos').addEventListener('click', function() {
+        somenteFavoritos = false;
+        document.getElementById('btnTodos').classList.add('ativo');
+        document.getElementById('btnFavoritos').classList.remove('ativo');
+        aplicarFiltros();
+    });
+    document.getElementById('btnFavoritos').addEventListener('click', function() {
+        somenteFavoritos = true;
+        document.getElementById('btnFavoritos').classList.add('ativo');
+        document.getElementById('btnTodos').classList.remove('ativo');
+        aplicarFiltros();
+    });
+    document.getElementById('btnAbertos').addEventListener('click', function() {
+        somenteAbertos = !somenteAbertos;
+        document.getElementById('btnAbertos').classList.toggle('ativo', somenteAbertos);
+        aplicarFiltros();
+    });
+    document.getElementById('btnVerSaloes').addEventListener('click', function() {
+        modoVisualizacao = 'salao';
+        atualizarModoVisualizacao();
+        document.getElementById('btnAbertos').disabled = false;
+        aplicarFiltros();
+    });
+    document.getElementById('btnVerClientes').addEventListener('click', function() {
+        modoVisualizacao = 'cliente';
+        atualizarModoVisualizacao();
+        somenteAbertos = false;
+        document.getElementById('btnAbertos').classList.remove('ativo');
+        document.getElementById('btnAbertos').disabled = true;
+        aplicarFiltros();
+    });
+
+    auth.onAuthStateChanged(async () => {
+        atualizarIdentificadorAtual();
+        await carregarProfissionais();
+    });
 
     window.onload = carregarProfissionais;
 </script>
