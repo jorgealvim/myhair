@@ -9,20 +9,24 @@ service cloud.firestore {
       return isSignedIn() ? request.auth.token.email : null;
     }
 
+    function isAdmin() {
+      return isSignedIn() && authEmail() in ['admin@myhair.test', 'salao1@myhair.test'];
+    }
+
     function isOwnerByEmail(email) {
       return isSignedIn() && email != null && authEmail() == email;
     }
 
     match /usuarios/{documentId} {
       allow read: if true;
-      allow create: if isOwnerByEmail(request.resource.data.email);
-      allow update, delete: if isOwnerByEmail(resource.data.email);
+      allow create: if isOwnerByEmail(request.resource.data.email) || isAdmin();
+      allow update, delete: if isOwnerByEmail(resource.data.email) || isAdmin();
     }
 
     match /clientes/{documentId} {
       allow read: if true;
-      allow create: if isOwnerByEmail(request.resource.data.email);
-      allow update, delete: if isOwnerByEmail(resource.data.email);
+      allow create: if isOwnerByEmail(request.resource.data.email) || isAdmin();
+      allow update, delete: if isOwnerByEmail(resource.data.email) || isAdmin();
     }
 
     match /favoritos/{documentId} {

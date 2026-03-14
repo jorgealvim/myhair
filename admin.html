@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Administração</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/myhair_core.js"></script>
+    <style>
+        :root { --pink: #fce4ec; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.76), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.34), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); color: var(--ink); min-height: 100vh; padding: 24px; }
+        .page { max-width: 1180px; margin: 0 auto; }
+        .panel { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.75); padding: 18px; }
+        .topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #edf1f4; padding-bottom: 14px; margin-bottom: 16px; }
+        .topo h1 { margin: 0; font-size: 28px; letter-spacing: -1px; }
+        .topo p { margin: 4px 0 0; color: var(--soft-ink); font-size: 13px; }
+        .acoes-topo { display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { border: none; border-radius: 10px; padding: 10px 14px; font-size: 12px; font-weight: bold; text-decoration: none; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
+        .btn-principal { background: linear-gradient(135deg, #9fdff9, #7ecceb); color: #043a5a; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); }
+        .btn-secundario { background: #f4f9fe; color: #174a72; border: 1px solid #d4e5f3; }
+        .btn-perigo { background: #fff2f2; color: #a53a3a; border: 1px solid #f0c6c6; }
+        .acesso-box { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: var(--shadow-md); margin-bottom: 16px; }
+        .acesso-box strong { display: block; font-size: 12px; margin-bottom: 6px; }
+        .acesso-box p { margin: 0; font-size: 12px; color: var(--soft-ink); }
+        .metricas { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; }
+        .card-metrica { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: var(--shadow-md); }
+        .card-metrica strong { display: block; font-size: 11px; color: #5c6c7c; margin-bottom: 8px; }
+        .card-metrica span { display: block; font-size: 24px; font-weight: bold; color: #143d5b; }
+        .layout { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .secao { background: linear-gradient(180deg, #ffffff, #fbfdff); border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: var(--shadow-md); }
+        .secao-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .secao-topo h2 { margin: 0; font-size: 18px; color: #174a72; }
+        .secao-topo p { margin: 3px 0 0; font-size: 12px; color: var(--soft-ink); }
+        .acoes-filtro { display: flex; gap: 8px; flex-wrap: wrap; }
+        .campo { width: 100%; padding: 10px 11px; border: 1px solid #d7e2eb; border-radius: 10px; background: rgba(255,255,255,0.96); font-size: 13px; transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+        .campo:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
+        .campo-inline { min-width: 180px; }
+        table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.92); border-radius: 14px; overflow: hidden; }
+        th { text-align: left; background: #f7fbff; color: #35516b; padding: 10px; font-size: 12px; }
+        td { padding: 10px; border-top: 1px solid #edf1f4; font-size: 12px; vertical-align: top; }
+        .status { display: inline-flex; padding: 4px 8px; border-radius: 999px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        .status.pendente { background: #fff1cc; color: #875f00; }
+        .status.aceito { background: #def4e6; color: #1f6a36; }
+        .status.recusado { background: #fde4e4; color: #8d2c2c; }
+        .status.outro { background: #edf1f4; color: #516273; }
+        .acoes-linha { display: flex; gap: 6px; flex-wrap: wrap; }
+        .acoes-linha .btn { padding: 7px 10px; font-size: 11px; }
+        .vazio { margin: 0; color: var(--soft-ink); font-size: 12px; }
+
+        @media (max-width: 980px) {
+            .metricas { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        @media (max-width: 760px) {
+            body { padding: 12px; }
+            .panel { padding: 14px; border-radius: 16px; }
+            .topo { flex-direction: column; align-items: flex-start; }
+            .metricas { grid-template-columns: repeat(2, 1fr); }
+            .secao-topo { flex-direction: column; align-items: flex-start; }
+            .acoes-filtro { width: 100%; }
+            .campo-inline { min-width: 0; width: 100%; }
+        }
+
+        @media (max-width: 520px) {
+            .metricas { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+    <div class="panel">
+        <div class="topo">
+            <div>
+                <h1>Administração</h1>
+                <p>Painel central para acompanhar cadastros, solicitações e atividade do app.</p>
+            </div>
+            <div class="acoes-topo">
+                <button type="button" id="btnAtualizarAdmin" class="btn btn-principal">ATUALIZAR PAINEL</button>
+                <a id="btnVoltarAdmin" href="index.html" class="btn btn-secundario">VOLTAR</a>
+            </div>
+        </div>
+
+        <div class="acesso-box">
+            <strong id="tituloAcessoAdmin">Verificando acesso...</strong>
+            <p id="textoAcessoAdmin">Aguardando autenticação.</p>
+        </div>
+
+        <div class="metricas">
+            <div class="card-metrica"><strong>Prestadores</strong><span id="metricaPrestadores">0</span></div>
+            <div class="card-metrica"><strong>Clientes</strong><span id="metricaClientes">0</span></div>
+            <div class="card-metrica"><strong>Agendamentos pendentes</strong><span id="metricaAgPendentes">0</span></div>
+            <div class="card-metrica"><strong>Agendamentos aceitos</strong><span id="metricaAgAceitos">0</span></div>
+            <div class="card-metrica"><strong>Compras pendentes</strong><span id="metricaComprasPendentes">0</span></div>
+            <div class="card-metrica"><strong>Compras aceitas</strong><span id="metricaComprasAceitas">0</span></div>
+        </div>
+
+        <div class="layout">
+            <section class="secao">
+                <div class="secao-topo">
+                    <div>
+                        <h2>Prestadores</h2>
+                        <p>Últimos parceiros cadastrados no sistema.</p>
+                    </div>
+                </div>
+                <div id="conteudoPrestadores"></div>
+            </section>
+
+            <section class="secao">
+                <div class="secao-topo">
+                    <div>
+                        <h2>Clientes</h2>
+                        <p>Últimos clientes cadastrados no sistema.</p>
+                    </div>
+                </div>
+                <div id="conteudoClientes"></div>
+            </section>
+
+            <section class="secao">
+                <div class="secao-topo">
+                    <div>
+                        <h2>Agendamentos</h2>
+                        <p>Solicitações de serviços registradas no app.</p>
+                    </div>
+                    <div class="acoes-filtro">
+                        <select id="filtroStatusAgendamentos" class="campo campo-inline">
+                            <option value="todos">Todos os status</option>
+                            <option value="pendente">Pendentes</option>
+                            <option value="aceito">Aceitos</option>
+                            <option value="recusado">Recusados</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="conteudoAgendamentos"></div>
+            </section>
+
+            <section class="secao">
+                <div class="secao-topo">
+                    <div>
+                        <h2>Compras</h2>
+                        <p>Solicitações de produtos registradas no app.</p>
+                    </div>
+                    <div class="acoes-filtro">
+                        <select id="filtroStatusCompras" class="campo campo-inline">
+                            <option value="todos">Todos os status</option>
+                            <option value="pendente">Pendentes</option>
+                            <option value="aceito">Aceitos</option>
+                            <option value="recusado">Recusados</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="conteudoCompras"></div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { flagDevAtiva, formatarMoeda, getAdminEmails, isAdminEmail } = window.MyHairCore;
+
+    window.MyHairCore.ensureFirebaseApp();
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const params = new URLSearchParams(window.location.search);
+    const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
+        || flagDevAtiva(params.get('modo'))
+        || flagDevAtiva(localStorage.getItem('myhair_modo_dev'));
+
+    let dashboardCarregando = false;
+    let dashboardState = {
+        usuarios: [],
+        clientes: [],
+        agendamentos: [],
+        compras: [],
+    };
+
+    function estaEmModoDesenvolvedor() {
+        return modoDesenvolvedorAtivo;
+    }
+
+    function usuarioPodeAdministrar(usuario) {
+        return estaEmModoDesenvolvedor() || isAdminEmail(usuario?.email || '');
+    }
+
+    function textoData(valor) {
+        const data = new Date(valor || '');
+        if (Number.isNaN(data.getTime())) {
+            return '-';
+        }
+        return `${data.toLocaleDateString('pt-BR')} ${data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    function valorData(item) {
+        const data = new Date(item?.dataRegistro || item?.dataCadastro || item?.criadoEm || item?.respostaEm || '');
+        return Number.isNaN(data.getTime()) ? 0 : data.getTime();
+    }
+
+    function statusClasse(valor) {
+        const texto = String(valor || '').toLowerCase();
+        if (texto === 'pendente' || texto === 'aceito' || texto === 'recusado') {
+            return texto;
+        }
+        return 'outro';
+    }
+
+    function atualizarMensagemAcesso(titulo, texto) {
+        document.getElementById('tituloAcessoAdmin').textContent = titulo;
+        document.getElementById('textoAcessoAdmin').textContent = texto;
+    }
+
+    function limparMetricas() {
+        ['metricaPrestadores', 'metricaClientes', 'metricaAgPendentes', 'metricaAgAceitos', 'metricaComprasPendentes', 'metricaComprasAceitas'].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = '0';
+            }
+        });
+    }
+
+    function renderizarVazio(containerId, texto) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = `<p class="vazio">${texto}</p>`;
+        }
+    }
+
+    function abrirPerfilAdmin(id, tipo) {
+        if (!id) {
+            return;
+        }
+        const sufixoDev = estaEmModoDesenvolvedor() ? '&dev=1' : '';
+        window.location.href = `perfil.html?id=${encodeURIComponent(id)}&tipo=${encodeURIComponent(tipo)}${sufixoDev}`;
+    }
+
+    window.abrirPerfilAdmin = abrirPerfilAdmin;
+
+    async function excluirRegistroAdmin(colecao, documentoId, rotulo) {
+        if (!usuarioPodeAdministrar(auth.currentUser)) {
+            alert('Acesso administrativo não autorizado.');
+            return;
+        }
+
+        if (!documentoId) {
+            return;
+        }
+
+        if (!confirm(`Deseja realmente excluir ${rotulo}?`)) {
+            return;
+        }
+
+        try {
+            await db.collection(colecao).doc(documentoId).delete();
+            alert('Registro excluído com sucesso.');
+            await carregarPainelAdmin();
+        } catch (error) {
+            console.error('Erro ao excluir registro no admin:', error);
+            alert('Não foi possível excluir o registro. Verifique as regras publicadas no Firebase.');
+        }
+    }
+
+    window.excluirRegistroAdmin = excluirRegistroAdmin;
+
+    function renderizarTabelaPrestadores(lista) {
+        const container = document.getElementById('conteudoPrestadores');
+        if (!container) {
+            return;
+        }
+
+        if (!lista.length) {
+            container.innerHTML = '<p class="vazio">Nenhum prestador encontrado.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Nome</th><th>E-mail</th><th>Cidade</th><th>ID</th><th>Ações</th></tr>
+                </thead>
+                <tbody>
+                    ${lista.map((item) => `
+                        <tr>
+                            <td>${item.fantasia || item.nome || '-'}</td>
+                            <td>${item.email || '-'}</td>
+                            <td>${item.cidade || '-'}</td>
+                            <td>${item.idSistema || item.idDoc || '-'}</td>
+                            <td>
+                                <div class="acoes-linha">
+                                    <button type="button" class="btn btn-secundario" onclick="abrirPerfilAdmin('${item.idSistema || item.idDoc}', 'salao')">VER PERFIL</button>
+                                    <button type="button" class="btn btn-perigo" onclick="excluirRegistroAdmin('usuarios', '${item.idDoc}', 'o prestador selecionado')">EXCLUIR</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderizarTabelaClientes(lista) {
+        const container = document.getElementById('conteudoClientes');
+        if (!container) {
+            return;
+        }
+
+        if (!lista.length) {
+            container.innerHTML = '<p class="vazio">Nenhum cliente encontrado.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Nome</th><th>E-mail</th><th>WhatsApp</th><th>ID</th><th>Ações</th></tr>
+                </thead>
+                <tbody>
+                    ${lista.map((item) => `
+                        <tr>
+                            <td>${item.nome || '-'}</td>
+                            <td>${item.email || '-'}</td>
+                            <td>${item.whatsapp || item.whats || '-'}</td>
+                            <td>${item.uid || item.idDoc || '-'}</td>
+                            <td>
+                                <div class="acoes-linha">
+                                    <button type="button" class="btn btn-secundario" onclick="abrirPerfilAdmin('${item.uid || item.idDoc}', 'cliente')">VER PERFIL</button>
+                                    <button type="button" class="btn btn-perigo" onclick="excluirRegistroAdmin('clientes', '${item.idDoc}', 'o cliente selecionado')">EXCLUIR</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderizarTabelaAgendamentos(lista) {
+        const container = document.getElementById('conteudoAgendamentos');
+        const filtro = document.getElementById('filtroStatusAgendamentos')?.value || 'todos';
+        if (!container) {
+            return;
+        }
+
+        const itens = filtro === 'todos' ? lista : lista.filter((item) => String(item.status || '').toLowerCase() === filtro);
+        if (!itens.length) {
+            container.innerHTML = '<p class="vazio">Nenhum agendamento encontrado com esse filtro.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Data</th><th>Cliente</th><th>Prestador</th><th>Status</th><th>Total</th><th>Ações</th></tr>
+                </thead>
+                <tbody>
+                    ${itens.map((item) => `
+                        <tr>
+                            <td>${textoData(item.criadoEm)}</td>
+                            <td>${item.clienteNome || '-'}</td>
+                            <td>${item.prestadorNome || '-'}</td>
+                            <td><span class="status ${statusClasse(item.status)}">${item.status || '-'}</span></td>
+                            <td>${formatarMoeda(item.valorTotal || item.subtotalServicos || 0)}</td>
+                            <td>
+                                <div class="acoes-linha">
+                                    <button type="button" class="btn btn-secundario" onclick="abrirPerfilAdmin('${item.prestadorId || ''}', 'salao')">PRESTADOR</button>
+                                    <button type="button" class="btn btn-perigo" onclick="excluirRegistroAdmin('solicitacoes_agendamento', '${item.idDoc}', 'o agendamento selecionado')">EXCLUIR</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function renderizarTabelaCompras(lista) {
+        const container = document.getElementById('conteudoCompras');
+        const filtro = document.getElementById('filtroStatusCompras')?.value || 'todos';
+        if (!container) {
+            return;
+        }
+
+        const itens = filtro === 'todos' ? lista : lista.filter((item) => String(item.status || '').toLowerCase() === filtro);
+        if (!itens.length) {
+            container.innerHTML = '<p class="vazio">Nenhuma compra encontrada com esse filtro.</p>';
+            return;
+        }
+
+        container.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Data</th><th>Cliente</th><th>Prestador</th><th>Status</th><th>Total</th><th>Ações</th></tr>
+                </thead>
+                <tbody>
+                    ${itens.map((item) => `
+                        <tr>
+                            <td>${textoData(item.criadoEm)}</td>
+                            <td>${item.clienteNome || '-'}</td>
+                            <td>${item.prestadorNome || '-'}</td>
+                            <td><span class="status ${statusClasse(item.status)}">${item.status || '-'}</span></td>
+                            <td>${formatarMoeda(item.total || 0)}</td>
+                            <td>
+                                <div class="acoes-linha">
+                                    <button type="button" class="btn btn-secundario" onclick="abrirPerfilAdmin('${item.prestadorId || ''}', 'salao')">PRESTADOR</button>
+                                    <button type="button" class="btn btn-perigo" onclick="excluirRegistroAdmin('solicitacoes_compra_produtos', '${item.idDoc}', 'a compra selecionada')">EXCLUIR</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function atualizarMetricas() {
+        const agPendentes = dashboardState.agendamentos.filter((item) => String(item.status || '').toLowerCase() === 'pendente').length;
+        const agAceitos = dashboardState.agendamentos.filter((item) => String(item.status || '').toLowerCase() === 'aceito').length;
+        const comprasPendentes = dashboardState.compras.filter((item) => String(item.status || '').toLowerCase() === 'pendente').length;
+        const comprasAceitas = dashboardState.compras.filter((item) => String(item.status || '').toLowerCase() === 'aceito').length;
+
+        document.getElementById('metricaPrestadores').textContent = String(dashboardState.usuarios.length);
+        document.getElementById('metricaClientes').textContent = String(dashboardState.clientes.length);
+        document.getElementById('metricaAgPendentes').textContent = String(agPendentes);
+        document.getElementById('metricaAgAceitos').textContent = String(agAceitos);
+        document.getElementById('metricaComprasPendentes').textContent = String(comprasPendentes);
+        document.getElementById('metricaComprasAceitas').textContent = String(comprasAceitas);
+    }
+
+    async function carregarPainelAdmin() {
+        if (dashboardCarregando) {
+            return;
+        }
+
+        dashboardCarregando = true;
+        try {
+            const usuario = auth.currentUser;
+            if (!usuario) {
+                atualizarMensagemAcesso('Login necessário', 'Entre com uma conta administrativa para abrir o painel.');
+                limparMetricas();
+                renderizarVazio('conteudoPrestadores', 'Faça login para visualizar o painel.');
+                renderizarVazio('conteudoClientes', 'Faça login para visualizar o painel.');
+                renderizarVazio('conteudoAgendamentos', 'Faça login para visualizar o painel.');
+                renderizarVazio('conteudoCompras', 'Faça login para visualizar o painel.');
+                return;
+            }
+
+            if (!usuarioPodeAdministrar(usuario)) {
+                atualizarMensagemAcesso('Acesso restrito', `A conta ${usuario.email || ''} não está marcada como administradora. Contas liberadas: ${getAdminEmails().join(', ')}.`);
+                limparMetricas();
+                renderizarVazio('conteudoPrestadores', 'Acesso administrativo não autorizado.');
+                renderizarVazio('conteudoClientes', 'Acesso administrativo não autorizado.');
+                renderizarVazio('conteudoAgendamentos', 'Acesso administrativo não autorizado.');
+                renderizarVazio('conteudoCompras', 'Acesso administrativo não autorizado.');
+                return;
+            }
+
+            atualizarMensagemAcesso('Acesso administrativo liberado', estaEmModoDesenvolvedor()
+                ? 'Modo desenvolvedor ativo: painel liberado para manutenção.'
+                : `Conta autenticada: ${usuario.email || '-'}.`);
+
+            const [usuariosSnap, clientesSnap, agendamentosSnap, comprasSnap] = await Promise.all([
+                db.collection('usuarios').get(),
+                db.collection('clientes').get(),
+                db.collection('solicitacoes_agendamento').get(),
+                db.collection('solicitacoes_compra_produtos').get(),
+            ]);
+
+            dashboardState.usuarios = usuariosSnap.docs.map((doc) => ({ idDoc: doc.id, ...doc.data() })).sort((a, b) => valorData(b) - valorData(a));
+            dashboardState.clientes = clientesSnap.docs.map((doc) => ({ idDoc: doc.id, ...doc.data() })).sort((a, b) => valorData(b) - valorData(a));
+            dashboardState.agendamentos = agendamentosSnap.docs.map((doc) => ({ idDoc: doc.id, ...doc.data() })).sort((a, b) => valorData(b) - valorData(a));
+            dashboardState.compras = comprasSnap.docs.map((doc) => ({ idDoc: doc.id, ...doc.data() })).sort((a, b) => valorData(b) - valorData(a));
+
+            atualizarMetricas();
+            renderizarTabelaPrestadores(dashboardState.usuarios.slice(0, 12));
+            renderizarTabelaClientes(dashboardState.clientes.slice(0, 12));
+            renderizarTabelaAgendamentos(dashboardState.agendamentos.slice(0, 20));
+            renderizarTabelaCompras(dashboardState.compras.slice(0, 20));
+        } catch (error) {
+            console.error('Erro ao carregar painel administrativo:', error);
+            atualizarMensagemAcesso('Erro ao carregar painel', 'Verifique a autenticação e as permissões do Firestore.');
+            renderizarVazio('conteudoPrestadores', 'Erro ao carregar prestadores.');
+            renderizarVazio('conteudoClientes', 'Erro ao carregar clientes.');
+            renderizarVazio('conteudoAgendamentos', 'Erro ao carregar agendamentos.');
+            renderizarVazio('conteudoCompras', 'Erro ao carregar compras.');
+        } finally {
+            dashboardCarregando = false;
+        }
+    }
+
+    document.getElementById('btnAtualizarAdmin').addEventListener('click', () => {
+        carregarPainelAdmin().catch((error) => {
+            console.error('Erro ao atualizar painel administrativo:', error);
+        });
+    });
+
+    document.getElementById('filtroStatusAgendamentos').addEventListener('change', () => {
+        renderizarTabelaAgendamentos(dashboardState.agendamentos.slice(0, 20));
+    });
+
+    document.getElementById('filtroStatusCompras').addEventListener('change', () => {
+        renderizarTabelaCompras(dashboardState.compras.slice(0, 20));
+    });
+
+    auth.onAuthStateChanged(() => {
+        carregarPainelAdmin().catch((error) => {
+            console.error('Erro ao recarregar admin após autenticação:', error);
+        });
+    });
+</script>
+</body>
+</html>

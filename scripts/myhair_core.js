@@ -1,4 +1,9 @@
 (function () {
+    const adminEmails = [
+        'admin@myhair.test',
+        'salao1@myhair.test'
+    ];
+
     const firebaseConfig = {
         apiKey: 'AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0',
         authDomain: 'my-hair-v2.firebaseapp.com',
@@ -11,6 +16,18 @@
     function flagDevAtiva(valor) {
         const texto = String(valor || '').trim().toLowerCase();
         return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
+    }
+
+    function normalizarEmail(valor) {
+        return String(valor || '').trim().toLowerCase();
+    }
+
+    function getAdminEmails() {
+        return adminEmails.slice();
+    }
+
+    function isAdminEmail(email) {
+        return getAdminEmails().includes(normalizarEmail(email));
     }
 
     function sanitizarId(valor) {
@@ -63,8 +80,12 @@
     }
 
     window.MyHairCore = {
+        adminEmails: getAdminEmails(),
         firebaseConfig,
         flagDevAtiva,
+        normalizarEmail,
+        getAdminEmails,
+        isAdminEmail,
         sanitizarId,
         parseMoeda,
         formatarMoeda,
