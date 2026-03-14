@@ -89,12 +89,7 @@
 
         if (metodo === 'email') {
             if (!email) return alert("Digite o e-mail");
-            const actionCodeSettings = {
-                url: window.location.origin + '/index.html',
-                handleCodeInApp: false
-            };
-
-            firebase.auth().sendPasswordResetEmail(email, actionCodeSettings)
+            firebase.auth().sendPasswordResetEmail(email)
                 .then(() => alert("Link enviado para o seu e-mail!"))
                 .catch(err => {
                     const codigo = err && err.code ? err.code : 'erro-desconhecido';

@@ -487,7 +487,7 @@
                     <div class="acoes-card">
                         <button type="button" class="btn-favorito ${favorito ? 'ativo' : ''}" onclick="alternarFavorito('${idParceiro}', '${p.entityType}')">${euFavorito ? 'DESFAVORITAR' : (favoritouVoce ? 'RETRIBUIR' : 'FAVORITAR')}</button>
                         <a href="${linkMapa}" target="_blank" rel="noopener noreferrer" class="btn-mapa">MAPA</a>
-                        <a href="perfil.html?id=${p.idSistema || p.idDoc}&modo=cliente" class="btn-perfil">VER</a>
+                        <a href="perfil.html?id=${p.idSistema || p.idDoc}&tipo=${p.entityType}" class="btn-perfil">VER</a>
                     </div>
                 </div>
             `;

@@ -147,8 +147,10 @@
 
     const params = new URLSearchParams(window.location.search);
     const idUsuario = params.get('id') || localStorage.getItem('usuarioID') || "MH-NOVO";
+    const tipoPerfilQuery = params.get('tipo');
     let registroAtual = null;
     let referenciaAtual = null;
+    let tipoPerfilAtual = 'salao';
     let identificadorAtual = 'anonimo';
     let tipoAtual = 'cliente';
     let favoritosSaida = new Set();
@@ -269,7 +271,7 @@
 
         const favoritos = getFavoritos();
         const identificador = getIdentificadorPerfil();
-        const tipoAlvo = 'salao';
+        const tipoAlvo = tipoPerfilAtual === 'cliente' ? 'cliente' : 'salao';
         const usuarioAnonimo = !identificadorAtual || identificadorAtual.startsWith('anonimo_') || identificadorAtual === 'anonimo';
 
         if (usuarioAnonimo) {
@@ -496,20 +498,58 @@
 
             let registro = null;
 
-            const docDireto = await db.collection('usuarios').doc(idUsuario).get();
-            if (docDireto.exists) {
-                registro = { idDoc: docDireto.id, ...docDireto.data() };
-                referenciaAtual = docDireto.ref;
-            } else {
+            async function buscarSalao() {
+                const docDireto = await db.collection('usuarios').doc(idUsuario).get();
+                if (docDireto.exists) {
+                    return {
+                        registro: { idDoc: docDireto.id, entityType: 'salao', ...docDireto.data() },
+                        referencia: docDireto.ref,
+                        tipoPerfil: 'salao',
+                    };
+                }
+
                 const busca = await db.collection('usuarios').where('idSistema', '==', idUsuario).limit(1).get();
                 if (!busca.empty) {
                     const doc = busca.docs[0];
-                    registro = { idDoc: doc.id, ...doc.data() };
-                    referenciaAtual = doc.ref;
+                    return {
+                        registro: { idDoc: doc.id, entityType: 'salao', ...doc.data() },
+                        referencia: doc.ref,
+                        tipoPerfil: 'salao',
+                    };
+                }
+
+                return null;
+            }
+
+            async function buscarCliente() {
+                const docDireto = await db.collection('clientes').doc(idUsuario).get();
+                if (docDireto.exists) {
+                    return {
+                        registro: { idDoc: docDireto.id, entityType: 'cliente', ...docDireto.data() },
+                        referencia: docDireto.ref,
+                        tipoPerfil: 'cliente',
+                    };
+                }
+
+                return null;
+            }
+
+            const ordemBusca = tipoPerfilQuery === 'cliente'
+                ? [buscarCliente, buscarSalao]
+                : [buscarSalao, buscarCliente];
+
+            for (const buscar of ordemBusca) {
+                const resultado = await buscar();
+                if (resultado) {
+                    registro = resultado.registro;
+                    referenciaAtual = resultado.referencia;
+                    tipoPerfilAtual = resultado.tipoPerfil;
+                    break;
                 }
             }
 
             if (!registro) {
+                document.getElementById('nomeProfissional').innerText = 'Perfil não encontrado';
                 return;
             }
 
