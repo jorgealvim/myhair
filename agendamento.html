@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MY HAIR - Agendamento</title>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--pink); margin: 0; min-height: 100vh; padding: 24px; color: #2a2a2a; }
+        .page-shell { max-width: 920px; margin: 0 auto; }
+        .card { background: #fff; border-radius: 16px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); padding: 20px; }
+        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #eef1f4; padding-bottom: 12px; margin-bottom: 14px; }
+        .topo h1 { margin: 0; font-size: 24px; }
+        .btn-voltar { border: 1px solid #d7e4ef; background: #f7fbff; color: #0f4e78; border-radius: 10px; padding: 9px 12px; font-weight: bold; text-decoration: none; font-size: 12px; }
+        .dados { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+        .bloco { background: #fbfdff; border: 1px solid #e7eef5; border-radius: 12px; padding: 12px; }
+        .bloco label { display: block; font-size: 12px; font-weight: bold; color: #4b5f70; margin-bottom: 6px; }
+        .bloco input, .bloco select { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #cfdeea; font-size: 14px; }
+        .grade-horarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
+        .btn-hora { border: 1px solid #c8dced; background: #f2f9ff; color: #0d5685; border-radius: 10px; padding: 10px; font-weight: bold; cursor: pointer; }
+        .btn-hora.ativo { background: var(--blue); border-color: #9fd8f5; color: #053b5c; }
+        .status { font-size: 13px; color: #666; margin: 0; }
+        .btn-confirmar { margin-top: 12px; width: 100%; border: none; border-radius: 10px; background: var(--blue); color: #053b5c; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; }
+        .painel-status { margin-top: 12px; border: 1px solid #d9e8f3; border-radius: 12px; padding: 12px; background: #f8fcff; }
+        .painel-status h3 { margin: 0 0 8px; font-size: 14px; color: #264863; }
+        .badge-status { display: inline-block; font-size: 11px; font-weight: bold; border-radius: 999px; padding: 4px 9px; text-transform: uppercase; }
+        .badge-status.pendente { background: #fff1cc; color: #875f00; }
+        .badge-status.aceito { background: #def4e6; color: #1f6a36; }
+        .badge-status.recusado { background: #fde4e4; color: #8d2c2c; }
+
+        @media (max-width: 720px) {
+            body { padding: 12px; }
+            .card { padding: 14px; }
+            .dados { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<div class="page-shell">
+    <div class="card">
+        <div class="topo">
+            <h1>Marcar Horário</h1>
+            <a class="btn-voltar" href="visaogeral.html">VOLTAR</a>
+        </div>
+
+        <div class="dados">
+            <div class="bloco">
+                <label>Prestador</label>
+                <div id="nomePrestador" style="font-size:16px; font-weight:bold; color:#1f425d;">Carregando...</div>
+                <p id="idPrestador" class="status" style="margin-top:6px;">ID: --</p>
+            </div>
+            <div class="bloco">
+                <label>Data</label>
+                <input type="date" id="dataAgendamento">
+                <p id="textoData" class="status" style="margin-top:8px;">Escolha a data para listar horários disponíveis.</p>
+            </div>
+        </div>
+
+        <div class="bloco">
+            <label>Horários disponíveis</label>
+            <div id="gradeHorarios" class="grade-horarios"></div>
+            <p id="statusHorario" class="status" style="margin-top:8px;">Selecione um horário para solicitar agendamento.</p>
+            <button id="btnConfirmar" class="btn-confirmar" type="button">SOLICITAR AGENDAMENTO</button>
+        </div>
+
+        <div id="painelStatusSolicitacao" class="painel-status" style="display:none;">
+            <h3>Status da sua solicitação</h3>
+            <p style="margin:0 0 6px;"><span id="badgeStatusSolicitacao" class="badge-status pendente">pendente</span></p>
+            <p id="statusMensagemSolicitacao" class="status">Aguardando retorno do prestador.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
+        authDomain: "my-hair-v2.firebaseapp.com",
+        projectId: "my-hair-v2",
+        storageBucket: "my-hair-v2.appspot.com",
+        messagingSenderId: "672931938550",
+        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
+    };
+
+    if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+    }
+
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const params = new URLSearchParams(window.location.search);
+    const prestadorId = params.get('prestadorId') || '';
+    const prestadorNomeParam = params.get('prestadorNome') || '';
+
+    let prestadorAtual = null;
+    let clienteAtual = { id: 'anonimo', nome: 'Cliente' };
+    let horaSelecionada = '';
+    let solicitacaoAtualId = '';
+    let unsubscribeSolicitacao = null;
+
+    function sanitizarId(valor) {
+        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function hojeISO() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    function normalizarSlotAgenda(valorSlot) {
+        if (!valorSlot) {
+            return { disponivel: false, clienteNome: '', clienteId: '' };
+        }
+
+        if (typeof valorSlot === 'string') {
+            return { disponivel: false, clienteNome: valorSlot, clienteId: '' };
+        }
+
+        return {
+            disponivel: Boolean(valorSlot.disponivel),
+            clienteNome: String(valorSlot.clienteNome || valorSlot.cliente || ''),
+            clienteId: String(valorSlot.clienteId || ''),
+        };
+    }
+
+    function mapearStatusMensagem(status, mensagemAtual) {
+        if (mensagemAtual) {
+            return mensagemAtual;
+        }
+        if (status === 'aceito') {
+            return 'horario marcado com sucesso';
+        }
+        if (status === 'recusado') {
+            return 'Marcacao recusada pelo prestador.';
+        }
+        return 'Aguardando resposta do prestador.';
+    }
+
+    function renderizarStatusSolicitacao(dados) {
+        const painel = document.getElementById('painelStatusSolicitacao');
+        const badge = document.getElementById('badgeStatusSolicitacao');
+        const mensagem = document.getElementById('statusMensagemSolicitacao');
+        if (!painel || !badge || !mensagem) {
+            return;
+        }
+
+        if (!dados) {
+            painel.style.display = 'none';
+            return;
+        }
+
+        const status = String(dados.status || 'pendente').toLowerCase();
+        badge.className = `badge-status ${status}`;
+        badge.textContent = status;
+        mensagem.textContent = mapearStatusMensagem(status, dados.mensagemPrestador);
+        painel.style.display = 'block';
+    }
+
+    function monitorarSolicitacao(docId) {
+        if (!docId) {
+            return;
+        }
+
+        if (unsubscribeSolicitacao) {
+            unsubscribeSolicitacao();
+            unsubscribeSolicitacao = null;
+        }
+
+        unsubscribeSolicitacao = db.collection('solicitacoes_agendamento').doc(docId)
+            .onSnapshot((snap) => {
+                if (!snap.exists) {
+                    return;
+                }
+                renderizarStatusSolicitacao(snap.data());
+            }, (error) => {
+                console.error('Erro ao monitorar solicitação:', error);
+            });
+    }
+
+    async function carregarSolicitacaoRecente() {
+        if (clienteAtual.id === 'anonimo' || !prestadorId) {
+            renderizarStatusSolicitacao(null);
+            return;
+        }
+
+        try {
+            const snap = await db.collection('solicitacoes_agendamento')
+                .where('clienteId', '==', clienteAtual.id)
+                .where('prestadorId', '==', prestadorId)
+                .get();
+
+            if (snap.empty) {
+                renderizarStatusSolicitacao(null);
+                return;
+            }
+
+            const lista = [];
+            snap.forEach((doc) => lista.push({ id: doc.id, ...doc.data() }));
+            lista.sort((a, b) => String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
+            const maisRecente = lista[0];
+            solicitacaoAtualId = maisRecente.id;
+            renderizarStatusSolicitacao(maisRecente);
+            monitorarSolicitacao(solicitacaoAtualId);
+        } catch (error) {
+            console.error('Erro ao carregar solicitação recente:', error);
+        }
+    }
+
+    async function identificarClienteAtual() {
+        const usuarioAuth = auth.currentUser;
+        const idLocal = localStorage.getItem('usuarioID') || '';
+
+        if (!usuarioAuth?.email && !idLocal) {
+            clienteAtual = { id: 'anonimo', nome: 'Cliente' };
+            return;
+        }
+
+        if (usuarioAuth?.email) {
+            const snap = await db.collection('clientes').where('email', '==', usuarioAuth.email).limit(1).get();
+            if (!snap.empty) {
+                const doc = snap.docs[0];
+                const dados = doc.data();
+                clienteAtual = { id: doc.id, nome: dados.nome || usuarioAuth.email || 'Cliente' };
+                return;
+            }
+        }
+
+        if (idLocal) {
+            const doc = await db.collection('clientes').doc(idLocal).get();
+            if (doc.exists) {
+                const dados = doc.data();
+                clienteAtual = { id: doc.id, nome: dados.nome || 'Cliente' };
+                return;
+            }
+        }
+
+        clienteAtual = { id: 'anonimo', nome: usuarioAuth?.email || 'Cliente' };
+    }
+
+    async function carregarPrestador() {
+        if (!prestadorId) {
+            document.getElementById('nomePrestador').textContent = 'Prestador não informado';
+            return;
+        }
+
+        const docDireto = await db.collection('usuarios').doc(prestadorId).get();
+        if (docDireto.exists) {
+            prestadorAtual = { idDoc: docDireto.id, ...docDireto.data() };
+        } else {
+            const busca = await db.collection('usuarios').where('idSistema', '==', prestadorId).limit(1).get();
+            if (!busca.empty) {
+                const doc = busca.docs[0];
+                prestadorAtual = { idDoc: doc.id, ...doc.data() };
+            }
+        }
+
+        const nome = prestadorAtual?.fantasia || prestadorAtual?.nome || decodeURIComponent(prestadorNomeParam || 'Prestador');
+        document.getElementById('nomePrestador').textContent = nome;
+        document.getElementById('idPrestador').textContent = `ID: ${prestadorAtual?.idSistema || prestadorAtual?.idDoc || prestadorId}`;
+    }
+
+    function listarHorariosDisponiveis() {
+        const grade = document.getElementById('gradeHorarios');
+        const status = document.getElementById('statusHorario');
+        const data = document.getElementById('dataAgendamento').value;
+
+        horaSelecionada = '';
+        grade.innerHTML = '';
+
+        if (!prestadorAtual || !data) {
+            status.textContent = 'Selecione a data para visualizar horários.';
+            return;
+        }
+
+        const agendaDia = prestadorAtual.agenda?.[data] || {};
+        const horarios = Object.keys(agendaDia)
+            .sort()
+            .filter((hora) => {
+                const slot = normalizarSlotAgenda(agendaDia[hora]);
+                return slot.disponivel && !slot.clienteNome;
+            });
+
+        if (!horarios.length) {
+            status.textContent = 'Não há horários disponíveis nessa data.';
+            return;
+        }
+
+        horarios.forEach((hora) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn-hora';
+            btn.textContent = hora;
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-hora').forEach((item) => item.classList.remove('ativo'));
+                btn.classList.add('ativo');
+                horaSelecionada = hora;
+                status.textContent = `Horário selecionado: ${data} às ${hora}`;
+            });
+            grade.appendChild(btn);
+        });
+
+        status.textContent = 'Selecione um horário para enviar solicitação.';
+    }
+
+    async function solicitarAgendamento() {
+        if (clienteAtual.id === 'anonimo') {
+            alert('Faça login como cliente para solicitar um horário.');
+            return;
+        }
+
+        if (!prestadorAtual) {
+            alert('Prestador não encontrado.');
+            return;
+        }
+
+        const data = document.getElementById('dataAgendamento').value;
+        if (!data || !horaSelecionada) {
+            alert('Selecione data e horário.');
+            return;
+        }
+
+        const docId = `sol_${sanitizarId(clienteAtual.id)}__${sanitizarId(prestadorId)}__${data.replace(/-/g, '')}_${horaSelecionada.replace(':', '')}`;
+        const ref = db.collection('solicitacoes_agendamento').doc(docId);
+
+        const agendaDia = prestadorAtual.agenda?.[data] || {};
+        const slot = normalizarSlotAgenda(agendaDia[horaSelecionada]);
+        if (!slot.disponivel || slot.clienteNome) {
+            alert('Esse horário não está mais disponível.');
+            await carregarPrestador();
+            listarHorariosDisponiveis();
+            return;
+        }
+
+        await ref.set({
+            prestadorId: prestadorAtual.idSistema || prestadorAtual.idDoc || prestadorId,
+            prestadorNome: prestadorAtual.fantasia || prestadorAtual.nome || 'Prestador',
+            clienteId: clienteAtual.id,
+            clienteNome: clienteAtual.nome,
+            data,
+            hora: horaSelecionada,
+            status: 'pendente',
+            mensagemPrestador: 'Aguardando resposta do prestador.',
+            criadoEm: new Date().toISOString(),
+        }, { merge: true });
+
+        solicitacaoAtualId = docId;
+        monitorarSolicitacao(solicitacaoAtualId);
+        renderizarStatusSolicitacao({ status: 'pendente', mensagemPrestador: 'Aguardando resposta do prestador.' });
+        alert('Solicitação enviada para o prestador. Você pode acompanhar o status nesta tela.');
+    }
+
+    async function iniciarPagina() {
+        document.getElementById('dataAgendamento').value = hojeISO();
+        document.getElementById('dataAgendamento').addEventListener('change', listarHorariosDisponiveis);
+        document.getElementById('btnConfirmar').addEventListener('click', solicitarAgendamento);
+
+        await identificarClienteAtual();
+        await carregarPrestador();
+        listarHorariosDisponiveis();
+        await carregarSolicitacaoRecente();
+    }
+
+    auth.onAuthStateChanged(() => {
+        iniciarPagina().catch((error) => {
+            console.error(error);
+            alert('Erro ao carregar a tela de agendamento.');
+        });
+    });
+
+    window.onload = () => {
+        if (!prestadorId) {
+            document.getElementById('statusHorario').textContent = 'Volte e escolha um prestador para agendar.';
+        }
+    };
+</script>
+</body>
+</html>

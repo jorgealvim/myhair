@@ -43,6 +43,20 @@
         /* Agenda */
         .slot-agenda { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eee; }
         .slot-time { font-weight: bold; font-size: 13px; min-width: 50px; }
+        .slot-campo { flex: 1; }
+        .btn-disponivel { border: 1px solid #d8d8d8; border-radius: 999px; background: #f4f4f4; color: #666; font-size: 10px; font-weight: bold; padding: 6px 10px; cursor: pointer; min-width: 84px; }
+        .btn-disponivel.ativo { background: #e7f8ed; color: #1c7b3a; border-color: #c2ebce; }
+        .dica-arrasto { font-size: 10px; color: #666; margin-top: -6px; margin-bottom: 8px; }
+        .status-slot { font-size: 10px; color: #777; min-width: 58px; text-align: right; }
+        .painel-solicitacoes { margin-top: 12px; background: #fafcff; border: 1px solid #e5eef6; border-radius: 8px; padding: 10px; }
+        .painel-solicitacoes h3 { margin: 0 0 8px; font-size: 12px; color: #35516b; }
+        .item-solicitacao { border-bottom: 1px solid #e9eef3; padding: 8px 0; }
+        .item-solicitacao:last-child { border-bottom: none; }
+        .item-solicitacao p { margin: 2px 0; font-size: 11px; color: #4d5c69; }
+        .acoes-solicitacao { display: flex; gap: 6px; margin-top: 6px; }
+        .btn-solicitacao { flex: 1; border: none; border-radius: 8px; font-size: 10px; font-weight: bold; padding: 7px 8px; cursor: pointer; }
+        .btn-aceitar { background: #dff4e6; color: #1f6a36; }
+        .btn-recusar { background: #fde8e8; color: #8d2c2c; }
         
         /* Tabelas */
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
@@ -94,7 +108,14 @@
                     <div class="col"><label>Dia</label><input type="number" id="dia" value="13"></div>
                 </div>
 
+                <div class="dica-arrasto">Arraste pelos botões DISPONÍVEL para marcar vários horários rapidamente.</div>
                 <div id="listaHorarios"></div>
+
+                <div id="painelSolicitacoes" class="painel-solicitacoes" style="display:none;">
+                    <h3>Solicitações de agendamento</h3>
+                    <div id="listaSolicitacoes"><p style="font-size:11px; color:#666; margin:0;">Nenhuma solicitação pendente.</p></div>
+                </div>
+
                 <button class="btn-update" onclick="atualizarAgenda()">ATUALIZAR AGENDA</button>
             </section>
 
@@ -155,6 +176,9 @@
     let tipoAtual = 'cliente';
     let favoritosSaida = new Set();
     let favoritosEntrada = new Set();
+    let disponibilidadeMarcada = {};
+    let arrastoDisponibilidadeAtivo = false;
+    let arrastoDisponibilidadeValor = false;
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
@@ -186,6 +210,196 @@
         const paraSafe = String(paraId).replace(/[^a-zA-Z0-9_-]/g, '_');
         return `fav_${deSafe}__${paraSafe}`;
     }
+
+    function sanitizarId(valor) {
+        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function normalizarSlotAgenda(valorSlot) {
+        if (!valorSlot) {
+            return { disponivel: false, clienteNome: '', clienteId: '', status: '' };
+        }
+
+        if (typeof valorSlot === 'string') {
+            return { disponivel: false, clienteNome: valorSlot, clienteId: '', status: 'confirmado' };
+        }
+
+        return {
+            disponivel: Boolean(valorSlot.disponivel),
+            clienteNome: String(valorSlot.clienteNome || valorSlot.cliente || ''),
+            clienteId: String(valorSlot.clienteId || ''),
+            status: String(valorSlot.status || ''),
+        };
+    }
+
+    function getAgendaDiaAtual() {
+        if (!registroAtual || !registroAtual.agenda) {
+            return {};
+        }
+        return registroAtual.agenda[getChaveAgenda()] || {};
+    }
+
+    function getDisponibilidadeHora(hora) {
+        if (Object.prototype.hasOwnProperty.call(disponibilidadeMarcada, hora)) {
+            return Boolean(disponibilidadeMarcada[hora]);
+        }
+        const slot = normalizarSlotAgenda(getAgendaDiaAtual()[hora]);
+        return slot.disponivel && !slot.clienteNome;
+    }
+
+    function aplicarDisponibilidadeVisual(hora) {
+        const botao = document.getElementById(`disp_${hora.replace(':', '')}`);
+        if (!botao) {
+            return;
+        }
+        const ativo = getDisponibilidadeHora(hora);
+        botao.classList.toggle('ativo', ativo);
+        botao.textContent = ativo ? 'DISPONÍVEL' : 'INDISPONÍVEL';
+    }
+
+    function definirDisponibilidadeHora(hora, valor) {
+        disponibilidadeMarcada[hora] = Boolean(valor);
+        aplicarDisponibilidadeVisual(hora);
+    }
+
+    function alternarDisponibilidadeHora(hora) {
+        definirDisponibilidadeHora(hora, !getDisponibilidadeHora(hora));
+    }
+
+    function iniciarArrastoDisponibilidade(evento, hora) {
+        evento.preventDefault();
+        arrastoDisponibilidadeAtivo = true;
+        arrastoDisponibilidadeValor = !getDisponibilidadeHora(hora);
+        definirDisponibilidadeHora(hora, arrastoDisponibilidadeValor);
+    }
+
+    function arrastarDisponibilidade(hora) {
+        if (!arrastoDisponibilidadeAtivo) {
+            return;
+        }
+        definirDisponibilidadeHora(hora, arrastoDisponibilidadeValor);
+    }
+
+    function encerrarArrastoDisponibilidade() {
+        arrastoDisponibilidadeAtivo = false;
+    }
+
+    function podeGerenciarSolicitacoes() {
+        return tipoPerfilAtual === 'salao' && tipoAtual === 'salao' && getIdentificadorPerfil() === identificadorAtual;
+    }
+
+    function renderizarSolicitacoesPendentes(solicitacoes) {
+        const painel = document.getElementById('painelSolicitacoes');
+        const lista = document.getElementById('listaSolicitacoes');
+        if (!painel || !lista) {
+            return;
+        }
+
+        if (!podeGerenciarSolicitacoes()) {
+            painel.style.display = 'none';
+            return;
+        }
+
+        painel.style.display = 'block';
+
+        if (!solicitacoes.length) {
+            lista.innerHTML = "<p style='font-size:11px; color:#666; margin:0;'>Nenhuma solicitação pendente.</p>";
+            return;
+        }
+
+        lista.innerHTML = solicitacoes.map((solicitacao) => `
+            <div class="item-solicitacao">
+                <p><strong>${solicitacao.clienteNome || 'Cliente'}</strong></p>
+                <p>${solicitacao.data} às ${solicitacao.hora}</p>
+                <div class="acoes-solicitacao">
+                    <button type="button" class="btn-solicitacao btn-aceitar" onclick="responderSolicitacaoAgendamento('${solicitacao.id}', 'aceito')">ACEITAR</button>
+                    <button type="button" class="btn-solicitacao btn-recusar" onclick="responderSolicitacaoAgendamento('${solicitacao.id}', 'recusado')">RECUSAR</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    async function carregarSolicitacoesPendentes() {
+        if (!podeGerenciarSolicitacoes()) {
+            renderizarSolicitacoesPendentes([]);
+            return;
+        }
+
+        try {
+            const snap = await db.collection('solicitacoes_agendamento')
+                .where('prestadorId', '==', getIdentificadorPerfil())
+                .where('status', '==', 'pendente')
+                .get();
+
+            const solicitacoes = [];
+            snap.forEach((doc) => {
+                solicitacoes.push({ id: doc.id, ...doc.data() });
+            });
+
+            solicitacoes.sort((a, b) => String(a.criadoEm || '').localeCompare(String(b.criadoEm || '')));
+            renderizarSolicitacoesPendentes(solicitacoes);
+        } catch (error) {
+            console.error('Erro ao carregar solicitações:', error);
+            renderizarSolicitacoesPendentes([]);
+        }
+    }
+
+    async function responderSolicitacaoAgendamento(solicitacaoId, resposta) {
+        if (!referenciaAtual || !podeGerenciarSolicitacoes()) {
+            return;
+        }
+
+        try {
+            const refSolicitacao = db.collection('solicitacoes_agendamento').doc(solicitacaoId);
+            const snap = await refSolicitacao.get();
+            if (!snap.exists) {
+                return;
+            }
+
+            const dados = snap.data();
+            const hora = String(dados.hora || '');
+            const data = String(dados.data || '');
+
+            if (resposta === 'aceito' && data && hora) {
+                const agendaAtual = { ...(registroAtual.agenda || {}) };
+                const diaAtual = { ...(agendaAtual[data] || {}) };
+                const slotAntigo = normalizarSlotAgenda(diaAtual[hora]);
+                diaAtual[hora] = {
+                    disponivel: false,
+                    clienteNome: dados.clienteNome || slotAntigo.clienteNome || 'Cliente',
+                    clienteId: dados.clienteId || slotAntigo.clienteId || '',
+                    status: 'confirmado',
+                };
+                agendaAtual[data] = diaAtual;
+
+                await referenciaAtual.set({ agenda: agendaAtual }, { merge: true });
+                registroAtual.agenda = agendaAtual;
+
+                if (data === getChaveAgenda()) {
+                    disponibilidadeMarcada[hora] = false;
+                    const campo = document.getElementById(`cli_${hora.replace(':', '')}`);
+                    if (campo) {
+                        campo.value = dados.clienteNome || 'Cliente';
+                    }
+                    aplicarDisponibilidadeVisual(hora);
+                }
+            }
+
+            await refSolicitacao.set({
+                status: resposta,
+                respostaEm: new Date().toISOString(),
+                mensagemPrestador: resposta === 'aceito' ? 'horario marcado com sucesso' : 'marcacao recusada pelo prestador',
+            }, { merge: true });
+
+            alert(resposta === 'aceito' ? 'Horário marcado com sucesso.' : 'Solicitação recusada.');
+            await carregarSolicitacoesPendentes();
+        } catch (error) {
+            console.error('Erro ao responder solicitação:', error);
+            alert('Erro ao responder solicitação de agendamento.');
+        }
+    }
+
+    window.responderSolicitacaoAgendamento = responderSolicitacaoAgendamento;
 
     async function resolverPerfilAtual() {
         const usuarioAuth = auth.currentUser;
@@ -329,6 +543,7 @@
     // Gerar Horários de 30 em 30 min (08h às 19h)
     function carregarSlotsAgenda() {
         const lista = document.getElementById('listaHorarios');
+        disponibilidadeMarcada = {};
         lista.innerHTML = "";
         for(let h = 8; h <= 19; h++) {
             for(let m of ['00', '30']) {
@@ -336,7 +551,9 @@
                 lista.innerHTML += `
                     <div class="slot-agenda">
                         <span class="slot-time">${hora}</span>
-                        <input type="text" placeholder="Nome do Cliente" id="cli_${hora.replace(':','')}">
+                        <button type="button" class="btn-disponivel" id="disp_${hora.replace(':','')}" onmousedown="iniciarArrastoDisponibilidade(event, '${hora}')" onmouseenter="arrastarDisponibilidade('${hora}')">INDISPONÍVEL</button>
+                        <input type="text" class="slot-campo" placeholder="Nome do Cliente" id="cli_${hora.replace(':','')}">
+                        <span class="status-slot" id="status_${hora.replace(':','')}">Livre</span>
                     </div>`;
             }
         }
@@ -352,17 +569,26 @@
     }
 
     function preencherAgendaAtual() {
-        if (!registroAtual || !registroAtual.agenda) {
-            return;
-        }
+        const agendaDia = getAgendaDiaAtual();
+        for(let h = 8; h <= 19; h++) {
+            for(let m of ['00', '30']) {
+                const hora = `${h.toString().padStart(2, '0')}:${m}`;
+                const slot = normalizarSlotAgenda(agendaDia[hora]);
+                const campo = document.getElementById(`cli_${hora.replace(':', '')}`);
+                const status = document.getElementById(`status_${hora.replace(':', '')}`);
 
-        const agendaDia = registroAtual.agenda[getChaveAgenda()] || {};
-        Object.entries(agendaDia).forEach(([hora, cliente]) => {
-            const campo = document.getElementById(`cli_${hora.replace(':', '')}`);
-            if (campo) {
-                campo.value = cliente;
+                if (campo) {
+                    campo.value = slot.clienteNome || '';
+                }
+
+                disponibilidadeMarcada[hora] = slot.disponivel && !slot.clienteNome;
+                aplicarDisponibilidadeVisual(hora);
+
+                if (status) {
+                    status.textContent = slot.clienteNome ? 'Ocupado' : (disponibilidadeMarcada[hora] ? 'Livre' : 'Fechado');
+                }
             }
-        });
+        }
     }
 
     function renderizarServicos() {
@@ -396,8 +622,27 @@
             for(let m of ['00', '30']) {
                 const hora = `${h.toString().padStart(2, '0')}:${m}`;
                 const campo = document.getElementById(`cli_${hora.replace(':','')}`);
-                if (campo && campo.value.trim()) {
-                    agendaDia[hora] = campo.value.trim();
+                const clienteNome = campo ? campo.value.trim() : '';
+                const disponivel = getDisponibilidadeHora(hora);
+                const slotAntigo = normalizarSlotAgenda(getAgendaDiaAtual()[hora]);
+
+                if (clienteNome) {
+                    agendaDia[hora] = {
+                        disponivel: false,
+                        clienteNome,
+                        clienteId: slotAntigo.clienteId || '',
+                        status: 'confirmado',
+                    };
+                    continue;
+                }
+
+                if (disponivel) {
+                    agendaDia[hora] = {
+                        disponivel: true,
+                        clienteNome: '',
+                        clienteId: '',
+                        status: 'disponivel',
+                    };
                 }
             }
         }
@@ -411,6 +656,7 @@
             await referenciaAtual.set({ agenda }, { merge: true });
             registroAtual.agenda = agenda;
             alert('Agenda atualizada para o dia selecionado!');
+            preencherAgendaAtual();
         } catch (error) {
             console.error('Erro ao salvar agenda:', error);
             alert('Erro ao salvar agenda.');
@@ -562,6 +808,7 @@
             renderizarProdutos();
             preencherAgendaAtual();
             atualizarBotaoFavorito();
+            await carregarSolicitacoesPendentes();
         } catch (error) {
             console.error('Erro ao carregar perfil:', error);
         }
@@ -570,6 +817,8 @@
     // Ao carregar a página
     window.onload = () => {
         carregarSlotsAgenda();
+        window.addEventListener('mouseup', encerrarArrastoDisponibilidade);
+        window.addEventListener('touchend', encerrarArrastoDisponibilidade);
         document.getElementById('ano').addEventListener('change', carregarSlotsAgenda);
         document.getElementById('mes').addEventListener('change', carregarSlotsAgenda);
         document.getElementById('dia').addEventListener('change', carregarSlotsAgenda);

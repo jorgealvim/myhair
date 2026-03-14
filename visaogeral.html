@@ -56,6 +56,15 @@
         .btn-mapa { background: #eef7ff; color: #0a5a91; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: bold; border: 1px solid #cfe7ff; }
         .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
         .btn-favorito.ativo { background: #ffe48a; color: #5b4700; }
+        .btn-agendar-link { width: 100%; background: #dff1ff; color: #0f4e78; border: 1px solid #bdddf3; border-radius: 8px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
+        .painel-solicitacoes-cliente { background: #f8fcff; border: 1px solid #ddeaf5; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
+        .painel-solicitacoes-cliente h3 { margin: 0 0 6px; font-size: 12px; color: #35516b; }
+        .item-solic-cliente { border-top: 1px solid #e9eff5; padding-top: 6px; margin-top: 6px; }
+        .item-solic-cliente p { margin: 1px 0; font-size: 10px; color: #4f6070; }
+        .status-solicitacao { font-weight: bold; text-transform: uppercase; }
+        .status-solicitacao.pendente { color: #8f6a00; }
+        .status-solicitacao.aceito { color: #1f6a36; }
+        .status-solicitacao.recusado { color: #8d2c2c; }
 
         @media (max-width: 420px) {
             body { padding: 12px; }
@@ -115,6 +124,8 @@
             </div>
         </div>
 
+        <div id="painelSolicitacoesCliente" class="painel-solicitacoes-cliente" style="display:none;"></div>
+
         <main class="lista-profissionais" id="listaProfissionais">
             <p style="text-align: center; color: #666;">Buscando profissionais...</p>
         </main>
@@ -149,6 +160,8 @@
     let modoVisualizacao = 'salao';
     let favoritosSaida = new Set();
     let favoritosEntrada = new Set();
+    let clienteAtualNome = 'Cliente';
+    let solicitacoesCliente = [];
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
@@ -173,6 +186,192 @@
     function getIdentificadorParceiro(parceiro) {
         return parceiro.entityId;
     }
+
+    function sanitizarId(valor) {
+        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    }
+
+    function hojeISO() {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+        const dia = String(hoje.getDate()).padStart(2, '0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
+    function normalizarSlotAgenda(valorSlot) {
+        if (!valorSlot) {
+            return { disponivel: false, clienteNome: '', clienteId: '', status: '' };
+        }
+
+        if (typeof valorSlot === 'string') {
+            return { disponivel: false, clienteNome: valorSlot, clienteId: '', status: 'confirmado' };
+        }
+
+        return {
+            disponivel: Boolean(valorSlot.disponivel),
+            clienteNome: String(valorSlot.clienteNome || valorSlot.cliente || ''),
+            clienteId: String(valorSlot.clienteId || ''),
+            status: String(valorSlot.status || ''),
+        };
+    }
+
+    function obterHorariosDisponiveis(parceiro, dataISO) {
+        const agendaDia = parceiro?.agenda?.[dataISO] || {};
+        return Object.keys(agendaDia)
+            .sort()
+            .filter((hora) => {
+                const slot = normalizarSlotAgenda(agendaDia[hora]);
+                return slot.disponivel && !slot.clienteNome;
+            });
+    }
+
+    function atualizarOpcoesHorario(parceiroId, dataISO) {
+        const select = document.getElementById(`hora_${sanitizarId(parceiroId)}`);
+        const parceiro = saloesCache.find((item) => item.entityId === parceiroId);
+        if (!select || !parceiro) {
+            return;
+        }
+
+        const horarios = obterHorariosDisponiveis(parceiro, dataISO);
+        if (!horarios.length) {
+            select.innerHTML = '<option value="">Sem horários disponíveis</option>';
+            return;
+        }
+
+        select.innerHTML = horarios.map((hora) => `<option value="${hora}">${hora}</option>`).join('');
+    }
+
+    function renderizarSolicitacoesCliente() {
+        const painel = document.getElementById('painelSolicitacoesCliente');
+        if (!painel) {
+            return;
+        }
+
+        if (tipoAtual !== 'cliente' || !identificadorAtual || identificadorAtual.startsWith('anonimo_')) {
+            painel.style.display = 'none';
+            painel.innerHTML = '';
+            return;
+        }
+
+        painel.style.display = 'block';
+
+        if (!solicitacoesCliente.length) {
+            painel.innerHTML = '<h3>Minhas solicitações</h3><p style="margin:0; font-size:10px; color:#666;">Você ainda não enviou solicitações de horário.</p>';
+            return;
+        }
+
+        const itens = solicitacoesCliente.map((item) => {
+            const status = String(item.status || 'pendente');
+            const mensagem = item.mensagemPrestador || (status === 'aceito' ? 'horario marcado com sucesso' : 'Aguardando resposta do prestador.');
+            return `
+                <div class="item-solic-cliente">
+                    <p><strong>${item.prestadorNome || 'Prestador'}</strong></p>
+                    <p>${item.data || ''} às ${item.hora || ''}</p>
+                    <p class="status-solicitacao ${status}">${status}</p>
+                    <p>${mensagem}</p>
+                </div>
+            `;
+        }).join('');
+
+        painel.innerHTML = `<h3>Minhas solicitações</h3>${itens}`;
+    }
+
+    async function carregarSolicitacoesCliente() {
+        if (tipoAtual !== 'cliente' || !identificadorAtual || identificadorAtual.startsWith('anonimo_')) {
+            solicitacoesCliente = [];
+            renderizarSolicitacoesCliente();
+            return;
+        }
+
+        try {
+            const snap = await db.collection('solicitacoes_agendamento')
+                .where('clienteId', '==', identificadorAtual)
+                .get();
+
+            solicitacoesCliente = [];
+            snap.forEach((doc) => {
+                solicitacoesCliente.push({ id: doc.id, ...doc.data() });
+            });
+
+            solicitacoesCliente.sort((a, b) => String(b.criadoEm || '').localeCompare(String(a.criadoEm || '')));
+            solicitacoesCliente = solicitacoesCliente.slice(0, 6);
+        } catch (error) {
+            console.error('Erro ao carregar solicitações do cliente:', error);
+            solicitacoesCliente = [];
+        }
+
+        renderizarSolicitacoesCliente();
+    }
+
+    async function solicitarHorario(parceiroId) {
+        if (tipoAtual !== 'cliente') {
+            alert('A marcação de horário é exclusiva para cliente.');
+            return;
+        }
+        if (!identificadorAtual || identificadorAtual.startsWith('anonimo_')) {
+            alert('Faça login como cliente para marcar horário.');
+            return;
+        }
+
+        const parceiro = saloesCache.find((item) => item.entityId === parceiroId);
+        if (!parceiro) {
+            alert('Prestador não encontrado.');
+            return;
+        }
+
+        const dataInput = document.getElementById(`data_${sanitizarId(parceiroId)}`);
+        const horaInput = document.getElementById(`hora_${sanitizarId(parceiroId)}`);
+        const data = dataInput ? dataInput.value : '';
+        const hora = horaInput ? horaInput.value : '';
+
+        if (!data || !hora) {
+            alert('Selecione data e horário disponíveis.');
+            return;
+        }
+
+        const horariosDisponiveis = obterHorariosDisponiveis(parceiro, data);
+        if (!horariosDisponiveis.includes(hora)) {
+            alert('Esse horário não está mais disponível. Atualize e tente novamente.');
+            atualizarOpcoesHorario(parceiroId, data);
+            return;
+        }
+
+        const docId = `sol_${sanitizarId(identificadorAtual)}__${sanitizarId(parceiroId)}__${data.replace(/-/g, '')}_${hora.replace(':', '')}`;
+        const ref = db.collection('solicitacoes_agendamento').doc(docId);
+
+        try {
+            const existe = await ref.get();
+            if (existe.exists) {
+                const dadosExistentes = existe.data();
+                if (dadosExistentes.status === 'pendente' || dadosExistentes.status === 'aceito') {
+                    alert('Você já possui solicitação para esse horário.');
+                    return;
+                }
+            }
+
+            await ref.set({
+                prestadorId: parceiroId,
+                prestadorNome: parceiro.fantasia || parceiro.nome || 'Prestador',
+                clienteId: identificadorAtual,
+                clienteNome: clienteAtualNome,
+                data,
+                hora,
+                status: 'pendente',
+                mensagemPrestador: 'Aguardando resposta do prestador.',
+                criadoEm: new Date().toISOString(),
+            }, { merge: true });
+
+            alert('Solicitação enviada para o prestador de serviço.');
+            await carregarSolicitacoesCliente();
+        } catch (error) {
+            console.error('Erro ao solicitar horário:', error);
+            alert('Erro ao enviar solicitação de horário.');
+        }
+    }
+
+    window.atualizarOpcoesHorario = atualizarOpcoesHorario;
+    window.solicitarHorario = solicitarHorario;
 
     function parseHoraMinutos(valor) {
         if (!valor) {
@@ -437,6 +636,25 @@
             modoVisualizacao = tipoAtual === 'salao' ? 'cliente' : 'salao';
             atualizarModoVisualizacao();
             await carregarRelacoesFavorito();
+
+            if (tipoAtual === 'cliente' && !identificadorAtual.startsWith('anonimo_')) {
+                const authAtual = auth.currentUser;
+                let nomeCliente = '';
+
+                const clienteDireto = await db.collection('clientes').doc(identificadorAtual).get();
+                if (clienteDireto.exists) {
+                    nomeCliente = clienteDireto.data().nome || '';
+                } else if (authAtual?.email) {
+                    const buscaCliente = await db.collection('clientes').where('email', '==', authAtual.email).limit(1).get();
+                    if (!buscaCliente.empty) {
+                        nomeCliente = buscaCliente.docs[0].data().nome || '';
+                    }
+                }
+
+                clienteAtualNome = nomeCliente || authAtual?.email || 'Cliente';
+            }
+
+            await carregarSolicitacoesCliente();
             
             aplicarFiltros();
         } catch (e) {
@@ -474,6 +692,12 @@
                 });
             }
 
+            const agendamentoHabilitado = (tipoAtual === 'cliente' && p.entityType === 'salao' && !identificadorAtual.startsWith('anonimo_'));
+            const nomeParam = encodeURIComponent(nomeDisp);
+            const agendamentoHtml = agendamentoHabilitado ? `
+                <a class="btn-agendar-link" href="agendamento.html?prestadorId=${idParceiro}&prestadorNome=${nomeParam}">MARCAR HORÁRIO</a>
+            ` : '';
+
             lista.innerHTML += `
                 <div class="card-parceiro ${p.tipoConta === 'PJ' ? 'vip' : ''}">
                     <div class="icone-parceiro">${inicial}</div>
@@ -488,6 +712,7 @@
                         <button type="button" class="btn-favorito ${favorito ? 'ativo' : ''}" onclick="alternarFavorito('${idParceiro}', '${p.entityType}')">${euFavorito ? 'DESFAVORITAR' : (favoritouVoce ? 'RETRIBUIR' : 'FAVORITAR')}</button>
                         <a href="${linkMapa}" target="_blank" rel="noopener noreferrer" class="btn-mapa">MAPA</a>
                         <a href="perfil.html?id=${p.idSistema || p.idDoc}&tipo=${p.entityType}" class="btn-perfil">VER</a>
+                        ${agendamentoHtml}
                     </div>
                 </div>
             `;
