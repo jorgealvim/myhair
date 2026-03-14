@@ -7,24 +7,25 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/myhair_core.js"></script>
     <style>
-        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--pink); margin: 0; min-height: 100vh; padding: 24px; color: #29313a; }
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.76), transparent 28%), radial-gradient(circle at bottom right, rgba(255,231,189,0.28), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; min-height: 100vh; padding: 24px; color: var(--ink); }
         body.conteudo-protegido { user-select: none; -webkit-user-select: none; }
         .page { max-width: 960px; margin: 0 auto; }
-        .card { background: #fff; border-radius: 16px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); padding: 18px; }
-        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #edf1f4; padding-bottom: 10px; margin-bottom: 12px; }
+        .card { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow-lg); padding: 18px; border: 1px solid rgba(255,255,255,0.75); }
+        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #edf1f4; padding-bottom: 12px; margin-bottom: 14px; }
         h1 { margin: 0; font-size: 24px; }
-        .btn-voltar { text-decoration: none; border: 1px solid #f2dfb8; background: #fff7e8; color: #8a5a00; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; }
-        .sub { font-size: 14px; color: #5e707f; margin: 0 0 12px; }
+        .btn-voltar { text-decoration: none; border: 1px solid #f2dfb8; background: #fff7e8; color: #8a5a00; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .sub { font-size: 14px; color: var(--soft-ink); margin: 0 0 12px; }
         .layout { display: grid; grid-template-columns: 1.35fr 1fr; gap: 12px; }
-        .bloco { border: 1px solid #eceff3; border-radius: 12px; padding: 12px; background: #fbfdff; }
+        .bloco { border: 1px solid #eceff3; border-radius: 16px; padding: 14px; background: linear-gradient(180deg, #ffffff, #fbfdff); box-shadow: var(--shadow-md); }
         .bloco h2 { margin: 0 0 10px; font-size: 16px; color: #4a3111; }
-        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+        table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.92); border-radius: 14px; overflow: hidden; }
         th { text-align: left; background: #fff9ef; color: #7a5417; padding: 10px; font-size: 13px; }
         td { padding: 10px; border-top: 1px solid #edf1f4; font-size: 13px; }
-        .qtd { width: 64px; padding: 6px; border: 1px solid #dacfb9; border-radius: 8px; }
-        .btn-add { border: 1px solid #f0d8ad; background: #fff6e6; color: #7b4d05; border-radius: 8px; padding: 7px 9px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .qtd { width: 64px; padding: 6px; border: 1px solid #dacfb9; border-radius: 10px; background: rgba(255,255,255,0.96); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+        .btn-add { border: 1px solid #f0d8ad; background: #fff6e6; color: #7b4d05; border-radius: 10px; padding: 7px 9px; font-size: 11px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .itens-carrinho { min-height: 42px; }
         .item-carrinho { display: flex; justify-content: space-between; gap: 8px; border-bottom: 1px dashed #eadfcb; padding: 7px 0; font-size: 12px; }
         .item-carrinho:last-child { border-bottom: none; }
@@ -32,19 +33,22 @@
         .linha-total { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; color: #5a4424; }
         .linha-total.total { font-size: 15px; color: #3f2a08; font-weight: bold; border-top: 1px solid #e9dcc7; padding-top: 8px; }
         .retirada-opcoes { display: flex; flex-wrap: wrap; gap: 8px; }
-        .btn-retirada { border: 1px solid #e6d2ad; background: #fff9f0; color: #6f4b11; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-retirada { border: 1px solid #e6d2ad; background: #fff9f0; color: #6f4b11; border-radius: 999px; padding: 7px 12px; font-size: 12px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
         .btn-retirada.ativo { background: #ffe6bd; border-color: #d99f4e; color: #5d3906; }
         .btn-retirada:disabled { opacity: 0.45; cursor: not-allowed; }
         .retirada-selecionada { margin: 8px 0 0; font-size: 12px; color: #6a512d; }
-        .btn-enviar { width: 100%; margin-top: 10px; border: 1px solid #d59a47; background: #ffc771; color: #5f3900; border-radius: 10px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-enviar { width: 100%; margin-top: 10px; border: 1px solid #d59a47; background: linear-gradient(135deg, #ffd28f, #ffc771); color: #5f3900; border-radius: 12px; padding: 10px; font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 8px 18px rgba(185, 118, 20, 0.16); transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
         .btn-enviar:disabled { opacity: 0.5; cursor: not-allowed; }
         .status-compra { margin: 8px 0 0; font-size: 12px; color: #6a512d; min-height: 16px; }
         .vazio { color: #6d7d8b; font-size: 13px; margin: 10px 0 0; }
+        .qtd:focus { outline: none; border-color: #e1ba75; box-shadow: 0 0 0 4px rgba(255,231,189,0.45); transform: translateY(-1px); }
+        .btn-voltar:hover, .btn-add:hover, .btn-retirada:hover, .btn-enviar:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(95, 73, 34, 0.12); filter: brightness(1.01); }
 
         @media (max-width: 720px) {
             body { padding: 12px; }
-            .card { padding: 14px; }
+            .card { padding: 14px; border-radius: 16px; }
             .layout { grid-template-columns: 1fr; }
+            .topo { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
@@ -82,29 +86,15 @@
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
-        authDomain: "my-hair-v2.firebaseapp.com",
-        projectId: "my-hair-v2",
-        storageBucket: "my-hair-v2.appspot.com",
-        messagingSenderId: "672931938550",
-        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
-    };
+    const { flagDevAtiva, parseMoeda, formatarMoeda, sanitizarId } = window.MyHairCore;
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    window.MyHairCore.ensureFirebaseApp();
 
     const auth = firebase.auth();
     const db = firebase.firestore();
     const params = new URLSearchParams(window.location.search);
     const prestadorId = params.get('prestadorId') || '';
     const prestadorNome = params.get('prestadorNome') ? decodeURIComponent(params.get('prestadorNome')) : 'Prestador';
-
-    function flagDevAtiva(valor) {
-        const texto = String(valor || '').trim().toLowerCase();
-        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
-    }
 
     const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
         || flagDevAtiva(params.get('modo'))
@@ -124,23 +114,6 @@
         if (voltar) {
             voltar.href = estaEmModoDesenvolvedor() ? 'visaogeral.html?dev=1' : 'visaogeral.html';
         }
-    }
-
-    function parseMoeda(valor) {
-        if (typeof valor === 'number') {
-            return Number.isFinite(valor) ? valor : 0;
-        }
-        const limpo = String(valor || '')
-            .replace(/\s/g, '')
-            .replace(/\./g, '')
-            .replace(',', '.')
-            .replace(/[^\d.-]/g, '');
-        const numero = Number(limpo);
-        return Number.isFinite(numero) ? numero : 0;
-    }
-
-    function formatarMoeda(valor) {
-        return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
     }
 
     function normalizarProduto(item) {
@@ -321,10 +294,6 @@
         }
 
         clienteAtual = { id: 'anonimo', nome: usuarioAuth?.email || 'Cliente' };
-    }
-
-    function sanitizarId(valor) {
-        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
     }
 
     async function enviarCompra() {

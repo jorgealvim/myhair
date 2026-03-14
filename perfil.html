@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="scripts/myhair_core.js"></script>
     <script src="scripts/app_permissoes.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; --cream: #fffaf6; --ink: #223142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
         body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.78), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.35), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; color: var(--ink); min-height: 100vh; padding: 20px; }
@@ -79,6 +80,16 @@
         th { text-align: left; background: #f7fbff; padding: 10px; }
         td { padding: 10px; border-bottom: 1px solid #eef3f7; }
 
+        .report-toolbar { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: end; margin-bottom: 12px; }
+        .report-toolbar .btn-update { margin-top: 0; }
+        .report-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+        .report-box { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 12px; padding: 10px; box-shadow: var(--shadow-md); }
+        .report-box strong { display: block; font-size: 11px; color: #5c6c7c; margin-bottom: 6px; }
+        .report-box span { font-size: 18px; font-weight: bold; color: #143d5b; }
+        .report-box small { display: block; margin-top: 4px; font-size: 10px; color: #6b7885; }
+        .report-empty { font-size: 12px; color: #6b7885; margin: 0; }
+        .report-note { margin: 0 0 10px; font-size: 11px; color: #6b7885; }
+
         input:focus, select:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
         .btn-voltar:hover, .btn-favorito:hover, .btn-update:hover, .btn-disponivel:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
 
@@ -87,6 +98,7 @@
             .login-card { padding: 16px; border-radius: 16px; }
             .grid-row { flex-direction: column; gap: 8px; }
             .slot-agenda { align-items: flex-start; flex-direction: column; gap: 6px; }
+            .report-toolbar, .report-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -127,6 +139,7 @@
             <button class="tab-btn active" onclick="openTab(event, 'agenda')">AGENDA</button>
             <button class="tab-btn" onclick="openTab(event, 'servicos')">SERVIÇOS</button>
             <button class="tab-btn" onclick="openTab(event, 'produtos')">PRODUTOS</button>
+            <button class="tab-btn" onclick="openTab(event, 'relatorios')">RELATÓRIOS</button>
         </nav>
 
         <main>
@@ -186,6 +199,44 @@
                 </table>
                 <button class="btn-update" onclick="atualizarProdutos()">ATUALIZAR PRODUTOS</button>
             </section>
+
+            <section id="relatorios" class="section-content">
+                <h2>Relatório de Vendas</h2>
+                <p class="report-note">Resumo de vendas aprovadas de produtos e serviços no período selecionado.</p>
+                <div class="report-toolbar">
+                    <div>
+                        <label for="periodoRelatorioVendas">Período</label>
+                        <select id="periodoRelatorioVendas">
+                            <option value="diario">Diário</option>
+                            <option value="semanal">Semanal</option>
+                            <option value="mensal" selected>Mensal</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                    <button type="button" id="btnAtualizarRelatorioVendas" class="btn-update">ATUALIZAR</button>
+                    <button type="button" id="btnExportarRelatorioVendas" class="btn-update">EXPORTAR PDF</button>
+                </div>
+                <div class="report-grid">
+                    <div class="report-box">
+                        <strong>Total vendido</strong>
+                        <span id="relatorioTotalVendas">R$ 0,00</span>
+                        <small id="relatorioQuantidadeVendas">0 vendas aprovadas</small>
+                    </div>
+                    <div class="report-box">
+                        <strong>Serviços</strong>
+                        <span id="relatorioTotalServicos">R$ 0,00</span>
+                        <small id="relatorioQuantidadeServicos">0 itens</small>
+                    </div>
+                    <div class="report-box">
+                        <strong>Produtos</strong>
+                        <span id="relatorioTotalProdutos">R$ 0,00</span>
+                        <small id="relatorioQuantidadeProdutos">0 itens</small>
+                    </div>
+                </div>
+                <div id="conteudoRelatorioVendas">
+                    <p class="report-empty">Carregando relatório...</p>
+                </div>
+            </section>
         </main>
     </div>
 </div>
@@ -224,6 +275,7 @@
     let minhaNotaSelecionada = 0;
     let eventosPerfilConfigurados = false;
     let carregamentoPerfilEmAndamento = false;
+    let relatorioVendasAtual = null;
 
     function atualizarIdentificadorAtual() {
         const usuarioAuth = auth.currentUser;
@@ -1159,6 +1211,233 @@
         });
     }
 
+    function obterPeriodoRelatorio(tipo) {
+        const agora = new Date();
+        const inicio = new Date(agora);
+        const fim = new Date(agora);
+
+        if (tipo === 'diario') {
+            inicio.setHours(0, 0, 0, 0);
+            fim.setHours(23, 59, 59, 999);
+            return { inicio, fim, label: 'Diário' };
+        }
+
+        if (tipo === 'semanal') {
+            const diaSemana = inicio.getDay();
+            const ajuste = diaSemana === 0 ? -6 : 1 - diaSemana;
+            inicio.setDate(inicio.getDate() + ajuste);
+            inicio.setHours(0, 0, 0, 0);
+            fim.setTime(inicio.getTime());
+            fim.setDate(fim.getDate() + 6);
+            fim.setHours(23, 59, 59, 999);
+            return { inicio, fim, label: 'Semanal' };
+        }
+
+        if (tipo === 'anual') {
+            inicio.setMonth(0, 1);
+            inicio.setHours(0, 0, 0, 0);
+            fim.setMonth(11, 31);
+            fim.setHours(23, 59, 59, 999);
+            return { inicio, fim, label: 'Anual' };
+        }
+
+        inicio.setDate(1);
+        inicio.setHours(0, 0, 0, 0);
+        fim.setMonth(fim.getMonth() + 1, 0);
+        fim.setHours(23, 59, 59, 999);
+        return { inicio, fim, label: 'Mensal' };
+    }
+
+    function dataRegistroRelatorio(item) {
+        const base = item?.respostaEm || item?.criadoEm || '';
+        const data = new Date(base);
+        return Number.isNaN(data.getTime()) ? null : data;
+    }
+
+    function dataRelatorioTexto(data) {
+        if (!(data instanceof Date) || Number.isNaN(data.getTime())) {
+            return '-';
+        }
+        return data.toLocaleDateString('pt-BR');
+    }
+
+    function descricaoServicosRelatorio(itens) {
+        if (!Array.isArray(itens) || !itens.length) {
+            return 'Agendamento aprovado';
+        }
+        return itens.map((item) => item.nome || 'Serviço').join(', ');
+    }
+
+    function renderizarTabelaRelatorioVendas(linhas) {
+        const conteudo = document.getElementById('conteudoRelatorioVendas');
+        if (!conteudo) {
+            return;
+        }
+
+        if (!linhas.length) {
+            conteudo.innerHTML = '<p class="report-empty">Nenhuma venda aprovada encontrada para o período selecionado.</p>';
+            return;
+        }
+
+        conteudo.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Data</th><th>Tipo</th><th>Cliente</th><th>Descrição</th><th>Total</th></tr>
+                </thead>
+                <tbody>
+                    ${linhas.map((item) => `
+                        <tr>
+                            <td>${item.dataTexto}</td>
+                            <td>${item.tipo}</td>
+                            <td>${item.cliente}</td>
+                            <td>${item.descricao}</td>
+                            <td>${formatarMoeda(item.total)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    function atualizarResumoRelatorioVendas(relatorio) {
+        document.getElementById('relatorioTotalVendas').textContent = formatarMoeda(relatorio.totalGeral);
+        document.getElementById('relatorioQuantidadeVendas').textContent = `${relatorio.totalItens} venda${relatorio.totalItens === 1 ? '' : 's'} aprovada${relatorio.totalItens === 1 ? '' : 's'}`;
+        document.getElementById('relatorioTotalServicos').textContent = formatarMoeda(relatorio.totalServicos);
+        document.getElementById('relatorioQuantidadeServicos').textContent = `${relatorio.quantidadeServicos} item${relatorio.quantidadeServicos === 1 ? '' : 's'}`;
+        document.getElementById('relatorioTotalProdutos').textContent = formatarMoeda(relatorio.totalProdutos);
+        document.getElementById('relatorioQuantidadeProdutos').textContent = `${relatorio.quantidadeProdutos} item${relatorio.quantidadeProdutos === 1 ? '' : 's'}`;
+        renderizarTabelaRelatorioVendas(relatorio.linhas);
+    }
+
+    async function carregarRelatorioVendas() {
+        const conteudo = document.getElementById('conteudoRelatorioVendas');
+        const seletor = document.getElementById('periodoRelatorioVendas');
+        if (!conteudo || !seletor) {
+            return;
+        }
+
+        if (!podeGerenciarSolicitacoes()) {
+            conteudo.innerHTML = '<p class="report-empty">Somente o dono do perfil pode visualizar o relatório de vendas.</p>';
+            relatorioVendasAtual = null;
+            return;
+        }
+
+        conteudo.innerHTML = '<p class="report-empty">Carregando relatório...</p>';
+        const periodoTipo = seletor.value || 'mensal';
+        const periodo = obterPeriodoRelatorio(periodoTipo);
+
+        try {
+            const [agendamentosSnap, comprasSnap] = await Promise.all([
+                db.collection('solicitacoes_agendamento').where('prestadorId', '==', getIdentificadorPerfil()).get(),
+                db.collection('solicitacoes_compra_produtos').where('prestadorId', '==', getIdentificadorPerfil()).get(),
+            ]);
+
+            const linhas = [];
+
+            agendamentosSnap.forEach((doc) => {
+                const dados = doc.data() || {};
+                if (String(dados.status || '').toLowerCase() !== 'aceito') {
+                    return;
+                }
+                const dataRegistro = dataRegistroRelatorio(dados);
+                if (!dataRegistro || dataRegistro < periodo.inicio || dataRegistro > periodo.fim) {
+                    return;
+                }
+                linhas.push({
+                    data: dataRegistro,
+                    dataTexto: dataRelatorioTexto(dataRegistro),
+                    tipo: 'Serviço',
+                    cliente: dados.clienteNome || 'Cliente',
+                    descricao: descricaoServicosRelatorio(dados.carrinhoServicos),
+                    total: Number(dados.valorTotal || dados.subtotalServicos || 0),
+                    categoria: 'servico',
+                });
+            });
+
+            comprasSnap.forEach((doc) => {
+                const dados = doc.data() || {};
+                if (String(dados.status || '').toLowerCase() !== 'aceito') {
+                    return;
+                }
+                const dataRegistro = dataRegistroRelatorio(dados);
+                if (!dataRegistro || dataRegistro < periodo.inicio || dataRegistro > periodo.fim) {
+                    return;
+                }
+                linhas.push({
+                    data: dataRegistro,
+                    dataTexto: dataRelatorioTexto(dataRegistro),
+                    tipo: 'Produto',
+                    cliente: dados.clienteNome || 'Cliente',
+                    descricao: resumoItensCompra(dados.itens),
+                    total: Number(dados.total || 0),
+                    categoria: 'produto',
+                });
+            });
+
+            linhas.sort((a, b) => b.data.getTime() - a.data.getTime());
+
+            const relatorio = {
+                perfilNome: registroAtual?.fantasia || registroAtual?.nome || 'Profissional',
+                periodo: periodo.label,
+                linhas,
+                totalGeral: linhas.reduce((acc, item) => acc + item.total, 0),
+                totalServicos: linhas.filter((item) => item.categoria === 'servico').reduce((acc, item) => acc + item.total, 0),
+                totalProdutos: linhas.filter((item) => item.categoria === 'produto').reduce((acc, item) => acc + item.total, 0),
+                quantidadeServicos: linhas.filter((item) => item.categoria === 'servico').length,
+                quantidadeProdutos: linhas.filter((item) => item.categoria === 'produto').length,
+                totalItens: linhas.length,
+            };
+
+            relatorioVendasAtual = relatorio;
+            atualizarResumoRelatorioVendas(relatorio);
+        } catch (error) {
+            console.error('Erro ao carregar relatório de vendas:', error);
+            conteudo.innerHTML = '<p class="report-empty">Erro ao carregar relatório de vendas.</p>';
+            relatorioVendasAtual = null;
+        }
+    }
+
+    function exportarRelatorioVendasPdf() {
+        if (!relatorioVendasAtual || !window.jspdf?.jsPDF) {
+            alert('Atualize o relatório antes de exportar o PDF.');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        let y = 18;
+
+        pdf.setFontSize(16);
+        pdf.text('MY HAIR - Relatório de Vendas', 14, y);
+        y += 8;
+        pdf.setFontSize(10);
+        pdf.text(`Perfil: ${relatorioVendasAtual.perfilNome}`, 14, y);
+        y += 6;
+        pdf.text(`Período: ${relatorioVendasAtual.periodo}`, 14, y);
+        y += 6;
+        pdf.text(`Emitido em: ${new Date().toLocaleString('pt-BR')}`, 14, y);
+        y += 8;
+        pdf.text(`Total vendido: ${formatarMoeda(relatorioVendasAtual.totalGeral)}`, 14, y);
+        y += 6;
+        pdf.text(`Serviços: ${formatarMoeda(relatorioVendasAtual.totalServicos)} | Produtos: ${formatarMoeda(relatorioVendasAtual.totalProdutos)}`, 14, y);
+        y += 8;
+
+        relatorioVendasAtual.linhas.forEach((item, index) => {
+            if (y > 270) {
+                pdf.addPage();
+                y = 18;
+            }
+            pdf.setFontSize(10);
+            pdf.text(`${index + 1}. ${item.dataTexto} | ${item.tipo} | ${item.cliente}`, 14, y);
+            y += 5;
+            const descricao = pdf.splitTextToSize(`${item.descricao} | Total: ${formatarMoeda(item.total)}`, 180);
+            pdf.text(descricao, 18, y);
+            y += (descricao.length * 5) + 3;
+        });
+
+        pdf.save(`relatorio-vendas-${relatorioVendasAtual.periodo.toLowerCase()}.pdf`);
+    }
+
     async function atualizarAgenda() {
         if (!podeEditarPerfil()) {
             alert('Somente o dono do cadastro pode alterar a agenda.');
@@ -1381,6 +1660,7 @@
             await carregarAvaliacoesPerfil();
             await carregarSolicitacoesPendentes();
             await carregarSolicitacoesCompraPendentes();
+            await carregarRelatorioVendas();
             iniciarMonitorSolicitacoesTempoReal();
             iniciarMonitorComprasTempoReal();
         } catch (error) {
@@ -1405,6 +1685,18 @@
         const btnFavoritoPerfil = document.getElementById('btnFavoritoPerfil');
         if (btnFavoritoPerfil) {
             btnFavoritoPerfil.addEventListener('click', alternarFavoritoPerfil);
+        }
+        const btnAtualizarRelatorio = document.getElementById('btnAtualizarRelatorioVendas');
+        if (btnAtualizarRelatorio) {
+            btnAtualizarRelatorio.addEventListener('click', () => {
+                carregarRelatorioVendas().catch((error) => {
+                    console.error('Erro ao atualizar relatório de vendas:', error);
+                });
+            });
+        }
+        const btnExportarRelatorio = document.getElementById('btnExportarRelatorioVendas');
+        if (btnExportarRelatorio) {
+            btnExportarRelatorio.addEventListener('click', exportarRelatorioVendasPdf);
         }
     }
 

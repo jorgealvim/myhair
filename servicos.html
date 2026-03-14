@@ -6,26 +6,29 @@
     <title>MY HAIR - Serviços</title>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/myhair_core.js"></script>
     <style>
-        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--pink); margin: 0; min-height: 100vh; padding: 24px; color: #29313a; }
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.76), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.34), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; min-height: 100vh; padding: 24px; color: var(--ink); }
         body.conteudo-protegido { user-select: none; -webkit-user-select: none; }
         .page { max-width: 960px; margin: 0 auto; }
-        .card { background: #fff; border-radius: 16px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); padding: 18px; }
-        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #edf1f4; padding-bottom: 10px; margin-bottom: 12px; }
+        .card { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow-lg); padding: 18px; border: 1px solid rgba(255,255,255,0.75); }
+        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #edf1f4; padding-bottom: 12px; margin-bottom: 14px; }
         h1 { margin: 0; font-size: 24px; }
-        .btn-voltar { text-decoration: none; border: 1px solid #cfe7ff; background: #eef7ff; color: #0a5a91; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; }
+        .btn-voltar { text-decoration: none; border: 1px solid #cfe7ff; background: #eef7ff; color: #0a5a91; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
         .acoes-topo { display: flex; gap: 8px; align-items: center; }
-        .btn-agendar { text-decoration: none; border: 1px solid #9fd8f5; background: #b3e5fc; color: #053b5c; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; }
-        .sub { font-size: 14px; color: #5e707f; margin: 0 0 12px; }
-        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden; }
+        .btn-agendar { text-decoration: none; border: 1px solid #9fd8f5; background: linear-gradient(135deg, #9fdff9, #7ecceb); color: #053b5c; border-radius: 10px; padding: 8px 12px; font-size: 12px; font-weight: bold; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
+        .sub { font-size: 14px; color: var(--soft-ink); margin: 0 0 12px; }
+        table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.92); border-radius: 14px; overflow: hidden; }
         th { text-align: left; background: #f5fbff; color: #35516b; padding: 10px; font-size: 13px; }
         td { padding: 10px; border-top: 1px solid #edf1f4; font-size: 13px; }
         .vazio { color: #6d7d8b; font-size: 13px; margin: 10px 0 0; }
+        .btn-voltar:hover, .btn-agendar:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
 
         @media (max-width: 720px) {
             body { padding: 12px; }
-            .card { padding: 14px; }
+            .card { padding: 14px; border-radius: 16px; }
+            .topo { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
@@ -45,28 +48,14 @@
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
-        authDomain: "my-hair-v2.firebaseapp.com",
-        projectId: "my-hair-v2",
-        storageBucket: "my-hair-v2.appspot.com",
-        messagingSenderId: "672931938550",
-        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
-    };
+    const { flagDevAtiva, formatarMoeda } = window.MyHairCore;
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    window.MyHairCore.ensureFirebaseApp();
 
     const db = firebase.firestore();
     const params = new URLSearchParams(window.location.search);
     const prestadorId = params.get('prestadorId') || '';
     const prestadorNome = params.get('prestadorNome') ? decodeURIComponent(params.get('prestadorNome')) : 'Prestador';
-
-    function flagDevAtiva(valor) {
-        const texto = String(valor || '').trim().toLowerCase();
-        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
-    }
 
     const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
         || flagDevAtiva(params.get('modo'))
@@ -106,7 +95,7 @@
         const linhas = servicos.map((servico) => `
             <tr>
                 <td>${servico.nome || '-'}</td>
-                <td>R$ ${servico.preco || '-'}</td>
+                <td>${servico.preco === '-' ? '-' : formatarMoeda(servico.preco)}</td>
                 <td>${servico.tempo || '-'}</td>
             </tr>
         `).join('');
@@ -146,7 +135,11 @@
         }
 
         const servicos = Array.isArray(registro.tabelaServicos) && registro.tabelaServicos.length
-            ? registro.tabelaServicos
+            ? registro.tabelaServicos.map((servico) => ({
+                nome: servico.nome,
+                preco: Number.isFinite(Number(servico.preco)) ? Number(servico.preco) : servico.preco,
+                tempo: servico.tempo,
+            }))
             : (Array.isArray(registro.servicosOferecidos)
                 ? registro.servicosOferecidos.map((servico) => ({ nome: servico, preco: '-', tempo: '-' }))
                 : []);

@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="scripts/myhair_core.js"></script>
     <script src="scripts/app_permissoes.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
         :root { --pink: #fce4ec; --blue: #b3e5fc; --cream: #fffaf6; --ink: #223142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
         body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.78), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.35), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; color: var(--ink); min-height: 100vh; padding: 20px; }
@@ -26,13 +27,29 @@
         .links-aux { text-align: center; margin-top: 10px; font-size: 12px; }
         .links-aux a { color: #0288d1; text-decoration: none; font-weight: bold; }
         .links-aux a:hover { text-decoration: underline; }
+        .report-card { margin-top: 14px; }
+        .report-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin-bottom: 12px; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .report-box { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 12px; padding: 10px; box-shadow: var(--shadow-md); }
+        .report-box strong { display: block; font-size: 11px; color: #5c6c7c; margin-bottom: 6px; }
+        .report-box span { font-size: 18px; font-weight: bold; color: #143d5b; }
+        .report-box small { display: block; margin-top: 4px; font-size: 10px; color: #6b7885; }
+        .report-empty { font-size: 12px; color: #6b7885; margin: 0; }
+        .report-note { font-size: 11px; color: #6b7885; margin: 0 0 10px; }
+        .btn-inline { padding: 12px; background: linear-gradient(135deg, #9fdff9, #7ecceb); border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; color: #043a5a; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: rgba(255,255,255,0.9); border-radius: 10px; overflow: hidden; }
+        th { text-align: left; background: #f7fbff; padding: 10px; font-size: 12px; }
+        td { padding: 10px; border-bottom: 1px solid #eef3f7; font-size: 12px; }
         input:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
-        .btn-save:hover, .btn-voltar:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
+        select { width: 100%; padding: 10px 11px; margin-top: 4px; border: 1px solid #d7e2eb; border-radius: 10px; box-sizing: border-box; font-size: 13px; background: rgba(255,255,255,0.96); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+        select:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
+        .btn-save:hover, .btn-voltar:hover, .btn-inline:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
 
         @media (max-width: 420px) {
             body { padding: 12px; }
             .login-card { padding: 16px; border-radius: 16px; }
             main { max-width: 100%; }
+            .report-toolbar, .report-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -61,13 +78,299 @@
               </div>
           </form>
       </div>
+
+      <div class="form-card report-card">
+          <h2>Relatório de Gastos</h2>
+          <p class="report-note">Acompanhe seus gastos aprovados com serviços e produtos e exporte em PDF.</p>
+          <div class="report-toolbar">
+              <div>
+                  <label for="periodoRelatorioGastos">Período</label>
+                  <select id="periodoRelatorioGastos">
+                      <option value="diario">Diário</option>
+                      <option value="semanal">Semanal</option>
+                      <option value="mensal" selected>Mensal</option>
+                      <option value="anual">Anual</option>
+                  </select>
+              </div>
+              <button type="button" id="btnExportarRelatorioGastos" class="btn-inline">EXPORTAR PDF</button>
+          </div>
+          <div class="report-grid">
+              <div class="report-box">
+                  <strong>Total gasto</strong>
+                  <span id="relatorioTotalGastos">R$ 0,00</span>
+                  <small id="relatorioQuantidadeGastos">0 compras e agendamentos</small>
+              </div>
+              <div class="report-box">
+                  <strong>Serviços e produtos</strong>
+                  <span id="relatorioDivisaoGastos">R$ 0,00</span>
+                  <small id="relatorioTiposGastos">Serviços: R$ 0,00 | Produtos: R$ 0,00</small>
+              </div>
+          </div>
+          <div id="conteudoRelatorioGastos">
+              <p class="report-empty">Faça login como cliente para visualizar seus gastos.</p>
+          </div>
+      </div>
   </main>
 </div>
 
 <script>
+    const { formatarMoeda } = window.MyHairCore;
+
     window.MyHairCore.ensureFirebaseApp();
     const auth = firebase.auth();
     const db = firebase.firestore();
+    let relatorioGastosAtual = null;
+
+    function obterPeriodoRelatorio(tipo) {
+        const agora = new Date();
+        const inicio = new Date(agora);
+        const fim = new Date(agora);
+
+        if (tipo === 'diario') {
+            inicio.setHours(0, 0, 0, 0);
+            fim.setHours(23, 59, 59, 999);
+            return { inicio, fim, label: 'Diário' };
+        }
+
+        if (tipo === 'semanal') {
+            const diaSemana = inicio.getDay();
+            const ajuste = diaSemana === 0 ? -6 : 1 - diaSemana;
+            inicio.setDate(inicio.getDate() + ajuste);
+            inicio.setHours(0, 0, 0, 0);
+            fim.setTime(inicio.getTime());
+            fim.setDate(fim.getDate() + 6);
+            fim.setHours(23, 59, 59, 999);
+            return { inicio, fim, label: 'Semanal' };
+        }
+
+        if (tipo === 'anual') {
+            inicio.setMonth(0, 1);
+            inicio.setHours(0, 0, 0, 0);
+            fim.setMonth(11, 31);
+            fim.setHours(23, 59, 59, 999);
+            return { inicio, fim, label: 'Anual' };
+        }
+
+        inicio.setDate(1);
+        inicio.setHours(0, 0, 0, 0);
+        fim.setMonth(fim.getMonth() + 1, 0);
+        fim.setHours(23, 59, 59, 999);
+        return { inicio, fim, label: 'Mensal' };
+    }
+
+    function dataRegistroRelatorio(item) {
+        const base = item?.respostaEm || item?.criadoEm || '';
+        const data = new Date(base);
+        return Number.isNaN(data.getTime()) ? null : data;
+    }
+
+    function dataRelatorioTexto(data) {
+        if (!(data instanceof Date) || Number.isNaN(data.getTime())) {
+            return '-';
+        }
+        return data.toLocaleDateString('pt-BR');
+    }
+
+    function resumoItensCompraPdf(itens) {
+        if (!Array.isArray(itens) || !itens.length) {
+            return 'Sem itens';
+        }
+        return itens.map((item) => `${item.nome || 'Item'} x${Number(item.quantidade || 1)}`).join(', ');
+    }
+
+    async function resolverClienteAtualRelatorio() {
+        const usuarioAuth = auth.currentUser;
+        const idLocal = localStorage.getItem('usuarioID') || '';
+
+        if (usuarioAuth?.uid) {
+            const doc = await db.collection('clientes').doc(usuarioAuth.uid).get();
+            if (doc.exists) {
+                return { id: doc.id, nome: doc.data()?.nome || usuarioAuth.email || 'Cliente' };
+            }
+        }
+
+        if (usuarioAuth?.email) {
+            const snap = await db.collection('clientes').where('email', '==', usuarioAuth.email).limit(1).get();
+            if (!snap.empty) {
+                const doc = snap.docs[0];
+                return { id: doc.id, nome: doc.data()?.nome || usuarioAuth.email || 'Cliente' };
+            }
+        }
+
+        if (idLocal) {
+            const doc = await db.collection('clientes').doc(idLocal).get();
+            if (doc.exists) {
+                return { id: doc.id, nome: doc.data()?.nome || 'Cliente' };
+            }
+        }
+
+        return null;
+    }
+
+    function renderizarTabelaRelatorioGastos(linhas) {
+        const conteudo = document.getElementById('conteudoRelatorioGastos');
+        if (!conteudo) {
+            return;
+        }
+
+        if (!linhas.length) {
+            conteudo.innerHTML = '<p class="report-empty">Nenhum gasto aprovado encontrado para o período selecionado.</p>';
+            return;
+        }
+
+        conteudo.innerHTML = `
+            <table>
+                <thead>
+                    <tr><th>Data</th><th>Tipo</th><th>Prestador</th><th>Descrição</th><th>Total</th></tr>
+                </thead>
+                <tbody>
+                    ${linhas.map((item) => `
+                        <tr>
+                            <td>${item.dataTexto}</td>
+                            <td>${item.tipo}</td>
+                            <td>${item.prestador}</td>
+                            <td>${item.descricao}</td>
+                            <td>${formatarMoeda(item.total)}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+
+    async function carregarRelatorioGastosCliente() {
+        const conteudo = document.getElementById('conteudoRelatorioGastos');
+        const seletor = document.getElementById('periodoRelatorioGastos');
+        if (!conteudo || !seletor) {
+            return;
+        }
+
+        conteudo.innerHTML = '<p class="report-empty">Carregando relatório...</p>';
+
+        try {
+            const cliente = await resolverClienteAtualRelatorio();
+            if (!cliente) {
+                conteudo.innerHTML = '<p class="report-empty">Faça login como cliente para visualizar seus gastos.</p>';
+                relatorioGastosAtual = null;
+                return;
+            }
+
+            const periodo = obterPeriodoRelatorio(seletor.value || 'mensal');
+            const [agendamentosSnap, comprasSnap] = await Promise.all([
+                db.collection('solicitacoes_agendamento').where('clienteId', '==', cliente.id).get(),
+                db.collection('solicitacoes_compra_produtos').where('clienteId', '==', cliente.id).get(),
+            ]);
+
+            const linhas = [];
+
+            agendamentosSnap.forEach((doc) => {
+                const dados = doc.data() || {};
+                if (String(dados.status || '').toLowerCase() !== 'aceito') {
+                    return;
+                }
+                const dataRegistro = dataRegistroRelatorio(dados);
+                if (!dataRegistro || dataRegistro < periodo.inicio || dataRegistro > periodo.fim) {
+                    return;
+                }
+                linhas.push({
+                    data: dataRegistro,
+                    dataTexto: dataRelatorioTexto(dataRegistro),
+                    tipo: 'Serviço',
+                    prestador: dados.prestadorNome || 'Prestador',
+                    descricao: Array.isArray(dados.carrinhoServicos) && dados.carrinhoServicos.length
+                        ? dados.carrinhoServicos.map((item) => item.nome || 'Serviço').join(', ')
+                        : 'Agendamento aprovado',
+                    total: Number(dados.valorTotal || dados.subtotalServicos || 0),
+                    categoria: 'servico',
+                });
+            });
+
+            comprasSnap.forEach((doc) => {
+                const dados = doc.data() || {};
+                if (String(dados.status || '').toLowerCase() !== 'aceito') {
+                    return;
+                }
+                const dataRegistro = dataRegistroRelatorio(dados);
+                if (!dataRegistro || dataRegistro < periodo.inicio || dataRegistro > periodo.fim) {
+                    return;
+                }
+                linhas.push({
+                    data: dataRegistro,
+                    dataTexto: dataRelatorioTexto(dataRegistro),
+                    tipo: 'Produto',
+                    prestador: dados.prestadorNome || 'Prestador',
+                    descricao: resumoItensCompraPdf(dados.itens),
+                    total: Number(dados.total || 0),
+                    categoria: 'produto',
+                });
+            });
+
+            linhas.sort((a, b) => b.data.getTime() - a.data.getTime());
+
+            const totalGeral = linhas.reduce((acc, item) => acc + item.total, 0);
+            const totalServicos = linhas.filter((item) => item.categoria === 'servico').reduce((acc, item) => acc + item.total, 0);
+            const totalProdutos = linhas.filter((item) => item.categoria === 'produto').reduce((acc, item) => acc + item.total, 0);
+
+            relatorioGastosAtual = {
+                clienteNome: cliente.nome,
+                periodo: periodo.label,
+                linhas,
+                totalGeral,
+                totalServicos,
+                totalProdutos,
+            };
+
+            document.getElementById('relatorioTotalGastos').textContent = formatarMoeda(totalGeral);
+            document.getElementById('relatorioQuantidadeGastos').textContent = `${linhas.length} gasto${linhas.length === 1 ? '' : 's'} aprovado${linhas.length === 1 ? '' : 's'}`;
+            document.getElementById('relatorioDivisaoGastos').textContent = formatarMoeda(totalServicos + totalProdutos);
+            document.getElementById('relatorioTiposGastos').textContent = `Serviços: ${formatarMoeda(totalServicos)} | Produtos: ${formatarMoeda(totalProdutos)}`;
+            renderizarTabelaRelatorioGastos(linhas);
+        } catch (error) {
+            console.error('Erro ao carregar relatório de gastos:', error);
+            conteudo.innerHTML = '<p class="report-empty">Erro ao carregar relatório de gastos.</p>';
+            relatorioGastosAtual = null;
+        }
+    }
+
+    function exportarRelatorioGastosPdf() {
+        if (!relatorioGastosAtual || !window.jspdf?.jsPDF) {
+            alert('Atualize o relatório de gastos antes de exportar o PDF.');
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF();
+        let y = 18;
+
+        pdf.setFontSize(16);
+        pdf.text('MY HAIR - Relatório de Gastos', 14, y);
+        y += 8;
+        pdf.setFontSize(10);
+        pdf.text(`Cliente: ${relatorioGastosAtual.clienteNome}`, 14, y);
+        y += 6;
+        pdf.text(`Período: ${relatorioGastosAtual.periodo}`, 14, y);
+        y += 6;
+        pdf.text(`Emitido em: ${new Date().toLocaleString('pt-BR')}`, 14, y);
+        y += 8;
+        pdf.text(`Total gasto: ${formatarMoeda(relatorioGastosAtual.totalGeral)}`, 14, y);
+        y += 6;
+        pdf.text(`Serviços: ${formatarMoeda(relatorioGastosAtual.totalServicos)} | Produtos: ${formatarMoeda(relatorioGastosAtual.totalProdutos)}`, 14, y);
+        y += 8;
+
+        relatorioGastosAtual.linhas.forEach((item, index) => {
+            if (y > 270) {
+                pdf.addPage();
+                y = 18;
+            }
+            pdf.text(`${index + 1}. ${item.dataTexto} | ${item.tipo} | ${item.prestador}`, 14, y);
+            y += 5;
+            const descricao = pdf.splitTextToSize(`${item.descricao} | Total: ${formatarMoeda(item.total)}`, 180);
+            pdf.text(descricao, 18, y);
+            y += (descricao.length * 5) + 3;
+        });
+
+        pdf.save(`relatorio-gastos-${relatorioGastosAtual.periodo.toLowerCase()}.pdf`);
+    }
 
     async function salvarCliente() {
         const nome = document.getElementById('nomeCliente').value;
@@ -127,6 +430,20 @@
     if (window.MyHairPermissoes) {
         window.MyHairPermissoes.initPainelPermissoes();
     }
+
+    document.getElementById('periodoRelatorioGastos').addEventListener('change', () => {
+        carregarRelatorioGastosCliente().catch((error) => {
+            console.error('Erro ao atualizar relatório de gastos:', error);
+        });
+    });
+
+    document.getElementById('btnExportarRelatorioGastos').addEventListener('click', exportarRelatorioGastosPdf);
+
+    auth.onAuthStateChanged(() => {
+        carregarRelatorioGastosCliente().catch((error) => {
+            console.error('Erro ao carregar relatório após autenticação:', error);
+        });
+    });
 </script>
 </body>
 </html>
