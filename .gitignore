@@ -1,0 +1,11 @@
+node_modules/
+
+scripts/*firebase-adminsdk*.json
+scripts/*.private.json
+scripts/*.secret.json
+
+.env
+.env.*
+
+dist/
+build/

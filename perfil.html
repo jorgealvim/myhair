@@ -7,28 +7,29 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/myhair_core.js"></script>
     <script src="scripts/app_permissoes.js"></script>
     <style>
-        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; color: #333; min-height: 100vh; padding: 20px; }
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; --cream: #fffaf6; --ink: #223142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.78), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.35), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; color: var(--ink); min-height: 100vh; padding: 20px; }
         .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
-        .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
-        header { padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 12px; }
-        .topo-acoes { display: flex; justify-content: flex-end; margin-bottom: 8px; }
-        .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 8px; padding: 7px 11px; font-size: 10px; font-weight: bold; }
+        .login-card { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); padding: 20px; border-radius: 18px; box-shadow: var(--shadow-lg); width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.75); }
+        header { padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eef3f7; margin-bottom: 12px; }
+        .topo-acoes { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+        .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 10px; padding: 8px 12px; font-size: 10px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
         
         /* Dados Básicos */
-        .perfil-resumo { background: #fff; margin: 0 0 12px; padding: 10px; border-radius: 10px; display: flex; align-items: center; gap: 8px; box-shadow: inset 0 0 0 1px #f1f1f1; }
-        .avatar { width: 36px; height: 36px; background: var(--blue); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; }
+        .perfil-resumo { background: linear-gradient(180deg, #ffffff, #fbfdff); margin: 0 0 14px; padding: 12px; border-radius: 14px; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-md); border: 1px solid var(--line); }
+        .avatar { width: 42px; height: 42px; background: linear-gradient(145deg, #dff3ff, #a8def5); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.72); }
         .resumo-acoes { margin-left: auto; display: flex; align-items: center; }
-        .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 10px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
         .btn-favorito.ativo { background: #ffe48a; color: #5b4700; }
         .info-basica h3 { margin: 0; font-size: 13px; }
-        .info-basica p { margin: 2px 0; font-size: 11px; color: #666; }
+        .info-basica p { margin: 2px 0; font-size: 11px; color: var(--soft-ink); }
         .status-acesso { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 4px 8px; border-radius: 999px; background: #f5f7fa; color: #4d5c69; font-size: 10px; font-weight: bold; }
         .status-acesso.dev { background: #fff3cd; color: #7a5a00; }
         .status-acesso.owner { background: #e7f8ed; color: #1c7b3a; }
-        .card-avaliacao { background: #fffdf4; margin: 0 0 12px; padding: 10px; border-radius: 10px; border: 1px solid #f6e7b2; }
+        .card-avaliacao { background: linear-gradient(180deg, #fffef8, #fff9e9); margin: 0 0 14px; padding: 12px; border-radius: 14px; border: 1px solid #f6e7b2; box-shadow: var(--shadow-md); }
         .card-avaliacao h4 { margin: 0 0 8px; font-size: 12px; color: #6e5700; }
         .linha-estrelas { display: flex; align-items: center; gap: 4px; }
         .estrela { border: none; background: transparent; padding: 2px; font-size: 20px; line-height: 1; cursor: pointer; color: #d7d7d7; }
@@ -37,12 +38,12 @@
         .avaliacao-info { margin-top: 6px; font-size: 10px; color: #6b5f36; }
 
         /* Menu Deslizante (Tabs) */
-        .menu-tabs { display: flex; background: #fff; overflow-x: auto; margin-bottom: 8px; border-radius: 10px; box-shadow: inset 0 0 0 1px #f1f1f1; }
-        .tab-btn { flex: 1; padding: 8px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; border-bottom: 2px solid transparent; white-space: nowrap; font-size: 12px; }
+        .menu-tabs { display: flex; background: rgba(255,255,255,0.9); overflow-x: auto; margin-bottom: 10px; border-radius: 12px; box-shadow: var(--shadow-md); border: 1px solid var(--line); }
+        .tab-btn { flex: 1; padding: 10px 8px; border: none; background: none; font-weight: bold; cursor: pointer; color: #888; border-bottom: 2px solid transparent; white-space: nowrap; font-size: 12px; transition: color 0.2s ease, background-color 0.2s ease; }
         .tab-btn.active { color: var(--dark-blue); border-bottom: 3px solid var(--dark-blue); }
 
         main { margin: 0; padding: 0; }
-        .section-content { display: none; background: white; padding: 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px #f1f1f1; }
+        .section-content { display: none; background: linear-gradient(180deg, #ffffff, #fbfdff); padding: 12px; border-radius: 14px; box-shadow: var(--shadow-md); border: 1px solid var(--line); }
         .section-content.active { display: block; }
 
         /* Estilização Geral de Tabelas e Forms */
@@ -50,18 +51,18 @@
         .grid-row { display: flex; gap: 10px; margin-bottom: 10px; }
         .col { flex: 1; }
         label { display: block; font-size: 11px; font-weight: bold; margin-bottom: 5px; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
-        .btn-update { width: 100%; padding: 12px; background: var(--blue); border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #d7e2eb; border-radius: 10px; box-sizing: border-box; background: rgba(255,255,255,0.96); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+        .btn-update { width: 100%; padding: 12px; background: linear-gradient(135deg, #9fdff9, #7ecceb); border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; color: #043a5a; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
 
         /* Agenda */
-        .slot-agenda { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid #eee; }
+        .slot-agenda { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #eef3f7; }
         .slot-time { font-weight: bold; font-size: 13px; min-width: 50px; }
         .slot-campo { flex: 1; }
-        .btn-disponivel { border: 1px solid #d8d8d8; border-radius: 999px; background: #f4f4f4; color: #666; font-size: 10px; font-weight: bold; padding: 6px 10px; cursor: pointer; min-width: 84px; }
+        .btn-disponivel { border: 1px solid #d8d8d8; border-radius: 999px; background: #f4f4f4; color: #666; font-size: 10px; font-weight: bold; padding: 6px 10px; cursor: pointer; min-width: 84px; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .btn-disponivel.ativo { background: #e7f8ed; color: #1c7b3a; border-color: #c2ebce; }
         .dica-arrasto { font-size: 10px; color: #666; margin-top: -6px; margin-bottom: 8px; }
         .status-slot { font-size: 10px; color: #777; min-width: 58px; text-align: right; }
-        .painel-solicitacoes { margin-top: 12px; background: #fafcff; border: 1px solid #e5eef6; border-radius: 8px; padding: 10px; }
+        .painel-solicitacoes { margin-top: 12px; background: linear-gradient(180deg, #fbfeff, #f5fbff); border: 1px solid #e5eef6; border-radius: 12px; padding: 10px; box-shadow: var(--shadow-md); }
         .painel-solicitacoes h3 { margin: 0 0 8px; font-size: 12px; color: #35516b; }
         .item-solicitacao { border-bottom: 1px solid #e9eef3; padding: 8px 0; }
         .item-solicitacao:last-child { border-bottom: none; }
@@ -74,13 +75,16 @@
         .conteudo-protegido { user-select: none; -webkit-user-select: none; }
         
         /* Tabelas */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
-        th { text-align: left; background: #f9f9f9; padding: 10px; }
-        td { padding: 10px; border-bottom: 1px solid #eee; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: rgba(255,255,255,0.9); border-radius: 10px; overflow: hidden; }
+        th { text-align: left; background: #f7fbff; padding: 10px; }
+        td { padding: 10px; border-bottom: 1px solid #eef3f7; }
+
+        input:focus, select:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
+        .btn-voltar:hover, .btn-favorito:hover, .btn-update:hover, .btn-disponivel:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
 
         @media (max-width: 420px) {
             body { padding: 12px; }
-            .login-card { padding: 16px; }
+            .login-card { padding: 16px; border-radius: 16px; }
             .grid-row { flex-direction: column; gap: 8px; }
             .slot-agenda { align-items: flex-start; flex-direction: column; gap: 6px; }
         }
@@ -101,6 +105,9 @@
                 <h3 id="nomeProfissional">Carregando...</h3>
                 <p id="idProfissional">ID: MH-0000</p>
                 <div id="statusAcesso" class="status-acesso">CARREGANDO ACESSO</div>
+            </div>
+            <div class="resumo-acoes">
+                <button type="button" id="btnFavoritoPerfil" class="btn-favorito">FAVORITAR</button>
             </div>
         </div>
 
@@ -185,28 +192,15 @@
 
 <script>
     // Inicialização do Firebase (Use as mesmas credenciais do cadastro)
-    const firebaseConfig = {
-        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
-        authDomain: "my-hair-v2.firebaseapp.com",
-        projectId: "my-hair-v2",
-        storageBucket: "my-hair-v2.appspot.com",
-        messagingSenderId: "672931938550",
-        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
-    };
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    const { flagDevAtiva, sanitizarId, formatarMoeda, comporRelacaoId } = window.MyHairCore;
+
+    window.MyHairCore.ensureFirebaseApp();
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     const params = new URLSearchParams(window.location.search);
     const idUsuario = params.get('id') || localStorage.getItem('usuarioID') || "MH-NOVO";
     const tipoPerfilQuery = params.get('tipo');
-
-    function flagDevAtiva(valor) {
-        const texto = String(valor || '').trim().toLowerCase();
-        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
-    }
 
     const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
         || flagDevAtiva(params.get('modo'))
@@ -286,20 +280,6 @@
         return registroAtual?.idSistema || registroAtual?.idDoc || idUsuario;
     }
 
-    function comporRelacaoId(deId, paraId) {
-        const deSafe = String(deId).replace(/[^a-zA-Z0-9_-]/g, '_');
-        const paraSafe = String(paraId).replace(/[^a-zA-Z0-9_-]/g, '_');
-        return `fav_${deSafe}__${paraSafe}`;
-    }
-
-    function sanitizarId(valor) {
-        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
-    }
-
-    function formatarMoeda(valor) {
-        const numero = Number(valor || 0);
-        return `R$ ${numero.toFixed(2).replace('.', ',')}`;
-    }
 
     function tipoPerfilNormalizado(tipo) {
         return tipo === 'cliente' ? 'cliente' : 'salao';
@@ -973,27 +953,33 @@
         favoritosSaida = new Set();
         favoritosEntrada = new Set();
 
-        const saida = await db
-            .collection('favoritos')
-            .where('deId', '==', identificadorAtual)
-            .where('deTipo', '==', tipoAtual)
-            .get();
+        try {
+            const saida = await db
+                .collection('favoritos')
+                .where('deId', '==', identificadorAtual)
+                .where('deTipo', '==', tipoAtual)
+                .get();
 
-        saida.forEach((doc) => {
-            const dados = doc.data();
-            favoritosSaida.add(dados.paraId);
-        });
+            saida.forEach((doc) => {
+                const dados = doc.data();
+                favoritosSaida.add(dados.paraId);
+            });
 
-        const entrada = await db
-            .collection('favoritos')
-            .where('paraId', '==', identificadorAtual)
-            .where('paraTipo', '==', tipoAtual)
-            .get();
+            const entrada = await db
+                .collection('favoritos')
+                .where('paraId', '==', identificadorAtual)
+                .where('paraTipo', '==', tipoAtual)
+                .get();
 
-        entrada.forEach((doc) => {
-            const dados = doc.data();
-            favoritosEntrada.add(dados.deId);
-        });
+            entrada.forEach((doc) => {
+                const dados = doc.data();
+                favoritosEntrada.add(dados.deId);
+            });
+        } catch (error) {
+            console.error('Erro ao carregar relacoes de favorito no perfil:', error);
+            favoritosSaida = new Set();
+            favoritosEntrada = new Set();
+        }
     }
 
     function atualizarBotaoFavorito() {
@@ -1017,6 +1003,17 @@
             return;
         }
 
+        const botao = document.getElementById('btnFavoritoPerfil');
+        const textoOriginalBotao = botao ? botao.textContent : '';
+        if (botao && botao.disabled) {
+            return;
+        }
+
+        if (botao) {
+            botao.disabled = true;
+            botao.textContent = 'ATUALIZANDO...';
+        }
+
         const favoritos = getFavoritos();
         const identificador = getIdentificadorPerfil();
         const tipoAlvo = tipoPerfilAtual === 'cliente' ? 'cliente' : 'salao';
@@ -1031,6 +1028,10 @@
             salvarFavoritos(favoritos);
             atualizarBotaoFavorito();
             alert('Favorito salvo localmente. Entre com login para sincronizar.');
+            if (botao) {
+                botao.disabled = false;
+                botao.textContent = textoOriginalBotao;
+            }
             return;
         }
 
@@ -1061,6 +1062,11 @@
         } catch (error) {
             console.error('Erro ao atualizar favorito no Firestore:', error);
             alert('Erro ao atualizar favorito.');
+        } finally {
+            if (botao) {
+                botao.disabled = false;
+                botao.textContent = textoOriginalBotao;
+            }
         }
     }
 

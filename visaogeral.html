@@ -7,47 +7,49 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/myhair_core.js"></script>
     <script src="scripts/app_permissoes.js"></script>
     <style>
-        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--pink); margin: 0; min-height: 100vh; padding: 20px; }
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.75), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.38), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; min-height: 100vh; padding: 20px; color: var(--ink); }
         body.conteudo-protegido { user-select: none; -webkit-user-select: none; }
 
         .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
-        .login-card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); width: 100%; box-sizing: border-box; }
-        header { background: white; padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eee; margin-bottom: 12px; }
+        .login-card { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); padding: 20px; border-radius: 18px; box-shadow: var(--shadow-lg); width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.75); }
+        header { background: transparent; padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eef3f7; margin-bottom: 12px; }
         .topo-nav { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px; }
-        .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 8px; padding: 7px 11px; font-size: 10px; font-weight: bold; }
-        .btn-meu-perfil { text-decoration: none; border: 1px solid #cfe7ff; background: #eaf6ff; color: #0d4f7b; border-radius: 8px; padding: 7px 11px; font-size: 10px; font-weight: bold; }
+        .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 10px; padding: 8px 12px; font-size: 10px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .btn-meu-perfil { text-decoration: none; border: 1px solid #cfe7ff; background: #eaf6ff; color: #0d4f7b; border-radius: 10px; padding: 8px 12px; font-size: 10px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
 
         .categorias-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 12px; scrollbar-width: none; }
         .categorias-scroll::-webkit-scrollbar { display: none; } /* Esconde barra no Chrome/Safari */
 
-        .filtros-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-        .campo-busca { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+        .filtros-box { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+        .campo-busca { width: 100%; padding: 11px 12px; border: 1px solid #d7e2eb; border-radius: 10px; box-sizing: border-box; font-size: 13px; background: rgba(255,255,255,0.96); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
         .acoes-filtro { display: flex; gap: 8px; }
-        .btn-filtro { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #f3f9fc; color: var(--dark-blue); font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-filtro { flex: 1; padding: 10px; border: none; border-radius: 10px; background: #f3f9fc; color: var(--dark-blue); font-size: 12px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
         .btn-filtro.ativo { background: var(--blue); color: #000; }
         .btn-filtro.secundario { flex: 0 0 auto; min-width: 110px; }
-        .btn-modo { flex: 1; padding: 10px; border: none; border-radius: 8px; background: #f7f7f7; color: #666; font-size: 12px; font-weight: bold; cursor: pointer; }
+        .btn-modo { flex: 1; padding: 10px; border: none; border-radius: 10px; background: #f7f7f7; color: #666; font-size: 12px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
         .btn-modo.ativo { background: #eaf6fd; color: var(--dark-blue); }
-        .texto-apoio { font-size: 11px; color: #777; text-align: center; margin-top: -2px; }
+        .texto-apoio { font-size: 11px; color: var(--soft-ink); text-align: center; margin-top: -2px; }
         .texto-apoio.dev { color: #7a5a00; font-weight: bold; }
-        .painel-contexto { background: #f8fcff; border: 1px solid #ddeaf5; border-radius: 10px; padding: 9px 10px; margin-bottom: 10px; }
+        .painel-contexto { background: linear-gradient(180deg, #fbfeff, #f2f9ff); border: 1px solid #ddeaf5; border-radius: 12px; padding: 10px; margin-bottom: 12px; box-shadow: var(--shadow-md); }
         .painel-contexto strong { display: block; font-size: 11px; color: #234862; }
         .painel-contexto span { display: block; margin-top: 3px; font-size: 10px; color: #5b7184; }
 
-        .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 50px; cursor: pointer; transition: 0.3s; opacity: 0.5; }
+        .cat-item { display: flex; flex-direction: column; align-items: center; min-width: 50px; cursor: pointer; transition: transform 0.2s ease, opacity 0.2s ease; opacity: 0.55; }
         .cat-item.active { opacity: 1; transform: scale(1.1); color: var(--dark-blue); }
         .cat-item span { font-size: 18px; }
         .cat-item p { margin: 3px 0 0; font-size: 9px; font-weight: bold; text-transform: uppercase; }
 
         .lista-profissionais { padding: 0; }
         
-        .card-parceiro { background: white; border-radius: 10px; padding: 8px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); display: flex; gap: 8px; align-items: center; border-left: 4px solid var(--blue); }
+        .card-parceiro { background: linear-gradient(180deg, #ffffff, #fbfdff); border-radius: 14px; padding: 10px; margin-bottom: 10px; box-shadow: var(--shadow-md); display: flex; gap: 10px; align-items: center; border: 1px solid var(--line); border-left: 4px solid var(--blue); transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .card-parceiro.vip { border-left-color: #ffd700; }
+        .card-parceiro:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
         
-        .icone-parceiro { width: 36px; height: 36px; background: #f0f0f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: var(--dark-blue); border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .icone-parceiro { width: 40px; height: 40px; background: linear-gradient(145deg, #f4fbff, #dff3ff); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; color: var(--dark-blue); border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.08); flex-shrink: 0; }
         
         .info-parceiro { flex-grow: 1; min-width: 0; } /* min-width evita quebra de layout com nomes longos */
         .info-parceiro h3 { margin: 0; font-size: 13px; color: #333; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -61,15 +63,15 @@
         .tag-serv { font-size: 9px; padding: 2px 6px; background: #e1f5fe; border-radius: 4px; color: #0277bd; font-weight: bold; text-transform: uppercase; }
 
         .acoes-card { display: flex; flex-direction: column; gap: 6px; align-items: center; }
-        .btn-perfil { background: var(--blue); color: #000; text-decoration: none; padding: 10px 12px; border-radius: 8px; font-size: 11px; font-weight: bold; flex-shrink: 0; }
-        .btn-mapa { background: #eef7ff; color: #0a5a91; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: 10px; font-weight: bold; border: 1px solid #cfe7ff; }
-        .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .btn-perfil { background: linear-gradient(135deg, #9fdff9, #7ecceb); color: #043a5a; text-decoration: none; padding: 10px 12px; border-radius: 10px; font-size: 11px; font-weight: bold; flex-shrink: 0; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); }
+        .btn-mapa { background: #eef7ff; color: #0a5a91; text-decoration: none; padding: 8px 12px; border-radius: 10px; font-size: 10px; font-weight: bold; border: 1px solid #cfe7ff; }
+        .btn-favorito { background: #fff7d6; color: #8a6a00; border: 1px solid #f5df8f; border-radius: 10px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
         .btn-favorito.ativo { background: #ffe48a; color: #5b4700; }
-        .btn-cartao { width: 100%; background: #eef7ff; color: #0a5a91; border: 1px solid #cfe7ff; border-radius: 8px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
-        .btn-agendar-link { width: 100%; background: #dff1ff; color: #0f4e78; border: 1px solid #bdddf3; border-radius: 8px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
-        .btn-servicos-link { width: 100%; background: #eafaf0; color: #1f6a36; border: 1px solid #cdebd9; border-radius: 8px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
-        .btn-produtos-link { width: 100%; background: #fff7e8; color: #8a5a00; border: 1px solid #f2dfb8; border-radius: 8px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
-        .painel-solicitacoes-cliente { background: #f8fcff; border: 1px solid #ddeaf5; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
+        .btn-cartao { width: 100%; background: #eef7ff; color: #0a5a91; border: 1px solid #cfe7ff; border-radius: 10px; padding: 8px 10px; font-size: 10px; font-weight: bold; cursor: pointer; }
+        .btn-agendar-link { width: 100%; background: #dff1ff; color: #0f4e78; border: 1px solid #bdddf3; border-radius: 10px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
+        .btn-servicos-link { width: 100%; background: #eafaf0; color: #1f6a36; border: 1px solid #cdebd9; border-radius: 10px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
+        .btn-produtos-link { width: 100%; background: #fff7e8; color: #8a5a00; border: 1px solid #f2dfb8; border-radius: 10px; padding: 9px 10px; font-size: 10px; font-weight: bold; text-decoration: none; text-align: center; box-sizing: border-box; }
+        .painel-solicitacoes-cliente { background: linear-gradient(180deg, #fbfeff, #f5fbff); border: 1px solid #ddeaf5; border-radius: 12px; padding: 10px; margin-bottom: 12px; box-shadow: var(--shadow-md); }
         .painel-solicitacoes-cliente h3 { margin: 0 0 6px; font-size: 12px; color: #35516b; }
         .item-solic-cliente { border-top: 1px solid #e9eff5; padding-top: 6px; margin-top: 6px; }
         .item-solic-cliente p { margin: 1px 0; font-size: 10px; color: #4f6070; }
@@ -77,21 +79,24 @@
         .status-solicitacao.pendente { color: #8f6a00; }
         .status-solicitacao.aceito { color: #1f6a36; }
         .status-solicitacao.recusado { color: #8d2c2c; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 999; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(21,33,46,0.38); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 999; }
         .modal-overlay.aberto { display: flex; }
-        .modal-card { width: min(560px, 100%); background: #fff; border-radius: 14px; box-shadow: 0 20px 40px rgba(0,0,0,0.22); padding: 16px; }
+        .modal-card { width: min(560px, 100%); background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); border-radius: 18px; box-shadow: 0 20px 40px rgba(0,0,0,0.22); padding: 16px; }
         .modal-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-bottom: 1px solid #eef1f4; padding-bottom: 8px; margin-bottom: 10px; }
         .modal-topo h3 { margin: 0; font-size: 18px; color: #1d3f59; }
         .btn-fechar-modal { border: none; background: #f3f8fd; color: #356287; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-weight: bold; cursor: pointer; }
-        .boas-vindas-box { background: #f7fcff; border: 1px solid #e2eef7; border-radius: 10px; padding: 10px; font-size: 13px; color: #3d5365; }
+        .boas-vindas-box { background: #f7fcff; border: 1px solid #e2eef7; border-radius: 12px; padding: 10px; font-size: 13px; color: #3d5365; }
         .especialidades-icones { margin-top: 10px; display: grid; grid-template-columns: repeat(auto-fit, minmax(86px, 1fr)); gap: 8px; }
-        .esp-item { border: 1px solid #e5edf4; border-radius: 8px; padding: 8px; text-align: center; background: #fff; }
+        .esp-item { border: 1px solid #e5edf4; border-radius: 10px; padding: 8px; text-align: center; background: #fff; }
         .esp-item span { display: block; font-size: 18px; }
         .esp-item p { margin: 4px 0 0; font-size: 11px; font-weight: bold; color: #496075; }
 
+        .campo-busca:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
+        .btn-voltar:hover, .btn-meu-perfil:hover, .btn-filtro:hover, .btn-modo:hover, .btn-perfil:hover, .btn-mapa:hover, .btn-favorito:hover, .btn-cartao:hover, .btn-agendar-link:hover, .btn-servicos-link:hover, .btn-produtos-link:hover, .btn-fechar-modal:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
+
         @media (max-width: 420px) {
             body { padding: 12px; }
-            .login-card { padding: 16px; }
+            .login-card { padding: 16px; border-radius: 16px; }
             .card-parceiro { align-items: flex-start; }
             .acoes-card { align-self: center; width: 100%; }
             .btn-perfil, .btn-favorito { width: 100%; text-align: center; box-sizing: border-box; }
@@ -178,27 +183,13 @@
 
 <script>
     // Substitua pelos seus dados reais do Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
-        authDomain: "my-hair-v2.firebaseapp.com",
-        projectId: "my-hair-v2",
-        storageBucket: "my-hair-v2.appspot.com",
-        messagingSenderId: "672931938550",
-        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
-    };
-    
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    const { flagDevAtiva, sanitizarId, hojeISO, comporRelacaoId } = window.MyHairCore;
+
+    window.MyHairCore.ensureFirebaseApp();
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     const params = new URLSearchParams(window.location.search);
-
-    function flagDevAtiva(valor) {
-        const texto = String(valor || '').trim().toLowerCase();
-        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
-    }
 
     const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
         || flagDevAtiva(params.get('modo'))
@@ -402,17 +393,6 @@
         return parceiro.entityId;
     }
 
-    function sanitizarId(valor) {
-        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
-    }
-
-    function hojeISO() {
-        const hoje = new Date();
-        const ano = hoje.getFullYear();
-        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-        const dia = String(hoje.getDate()).padStart(2, '0');
-        return `${ano}-${mes}-${dia}`;
-    }
 
     function normalizarSlotAgenda(valorSlot) {
         if (!valorSlot) {
@@ -708,11 +688,6 @@
         };
     }
 
-    function comporRelacaoId(deId, paraId) {
-        const deSafe = String(deId).replace(/[^a-zA-Z0-9_-]/g, '_');
-        const paraSafe = String(paraId).replace(/[^a-zA-Z0-9_-]/g, '_');
-        return `fav_${deSafe}__${paraSafe}`;
-    }
 
     function obterParceiroPorId(id, tipo) {
         const lista = tipo === 'cliente' ? clientesCache : saloesCache;
@@ -845,27 +820,33 @@
         favoritosSaida = new Set();
         favoritosEntrada = new Set();
 
-        const saida = await db
-            .collection('favoritos')
-            .where('deId', '==', identificadorAtual)
-            .where('deTipo', '==', tipoAtual)
-            .get();
+        try {
+            const saida = await db
+                .collection('favoritos')
+                .where('deId', '==', identificadorAtual)
+                .where('deTipo', '==', tipoAtual)
+                .get();
 
-        saida.forEach((doc) => {
-            const dados = doc.data();
-            favoritosSaida.add(dados.paraId);
-        });
+            saida.forEach((doc) => {
+                const dados = doc.data();
+                favoritosSaida.add(dados.paraId);
+            });
 
-        const entrada = await db
-            .collection('favoritos')
-            .where('paraId', '==', identificadorAtual)
-            .where('paraTipo', '==', tipoAtual)
-            .get();
+            const entrada = await db
+                .collection('favoritos')
+                .where('paraId', '==', identificadorAtual)
+                .where('paraTipo', '==', tipoAtual)
+                .get();
 
-        entrada.forEach((doc) => {
-            const dados = doc.data();
-            favoritosEntrada.add(dados.deId);
-        });
+            entrada.forEach((doc) => {
+                const dados = doc.data();
+                favoritosEntrada.add(dados.deId);
+            });
+        } catch (error) {
+            console.error('Erro ao carregar relacoes de favorito:', error);
+            favoritosSaida = new Set();
+            favoritosEntrada = new Set();
+        }
     }
 
     function atualizarModoVisualizacao() {
@@ -1084,24 +1065,29 @@
         const docId = comporRelacaoId(`${tipoAtual}_${identificadorAtual}`, `${tipoAlvo}_${idParceiro}`);
         const ref = db.collection('favoritos').doc(docId);
 
-        if (jaFavorito) {
-            await ref.delete();
-            favoritosSaida.delete(idParceiro);
-            favoritos.delete(idParceiro);
-        } else {
-            await ref.set({
-                deId: identificadorAtual,
-                deTipo: tipoAtual,
-                paraId: idParceiro,
-                paraTipo: tipoAlvo,
-                criadoEm: new Date().toISOString(),
-            });
-            favoritosSaida.add(idParceiro);
-            favoritos.add(idParceiro);
-        }
+        try {
+            if (jaFavorito) {
+                await ref.delete();
+                favoritosSaida.delete(idParceiro);
+                favoritos.delete(idParceiro);
+            } else {
+                await ref.set({
+                    deId: identificadorAtual,
+                    deTipo: tipoAtual,
+                    paraId: idParceiro,
+                    paraTipo: tipoAlvo,
+                    criadoEm: new Date().toISOString(),
+                });
+                favoritosSaida.add(idParceiro);
+                favoritos.add(idParceiro);
+            }
 
-        salvarFavoritos(favoritos);
-        aplicarFiltros();
+            salvarFavoritos(favoritos);
+            aplicarFiltros();
+        } catch (error) {
+            console.error('Erro ao alternar favorito:', error);
+            alert('Não foi possível atualizar o favorito agora. Tente novamente.');
+        }
     }
 
     function filtrarPorServico(servico, elemento) {

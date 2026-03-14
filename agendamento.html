@@ -7,40 +7,41 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/myhair_core.js"></script>
     <script src="scripts/app_permissoes.js"></script>
     <style>
-        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--pink); margin: 0; min-height: 100vh; padding: 24px; color: #2a2a2a; }
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.76), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.34), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; min-height: 100vh; padding: 24px; color: var(--ink); }
         .page-shell { max-width: 920px; margin: 0 auto; }
-        .card { background: #fff; border-radius: 16px; box-shadow: 0 10px 28px rgba(0,0,0,0.08); padding: 20px; }
-        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #eef1f4; padding-bottom: 12px; margin-bottom: 14px; }
+        .card { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow-lg); padding: 20px; border: 1px solid rgba(255,255,255,0.75); }
+        .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #eef1f4; padding-bottom: 14px; margin-bottom: 16px; }
         .topo h1 { margin: 0; font-size: 24px; }
-        .btn-voltar { border: 1px solid #d7e4ef; background: #f7fbff; color: #0f4e78; border-radius: 10px; padding: 9px 12px; font-weight: bold; text-decoration: none; font-size: 12px; }
+        .btn-voltar { border: 1px solid #d7e4ef; background: #f7fbff; color: #0f4e78; border-radius: 10px; padding: 9px 12px; font-weight: bold; text-decoration: none; font-size: 12px; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
         .badge-dev { display: inline-flex; align-items: center; margin-top: 8px; padding: 5px 10px; border-radius: 999px; background: #fff3cd; color: #7a5a00; font-size: 11px; font-weight: bold; }
         .dados { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
-        .bloco { background: #fbfdff; border: 1px solid #e7eef5; border-radius: 12px; padding: 12px; }
+        .bloco { background: linear-gradient(180deg, #ffffff, #fbfdff); border: 1px solid #e7eef5; border-radius: 16px; padding: 14px; box-shadow: var(--shadow-md); }
         .bloco label { display: block; font-size: 12px; font-weight: bold; color: #4b5f70; margin-bottom: 6px; }
-        .bloco input, .bloco select { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 8px; border: 1px solid #cfdeea; font-size: 14px; }
+        .bloco input, .bloco select { width: 100%; box-sizing: border-box; padding: 10px; border-radius: 10px; border: 1px solid #cfdeea; font-size: 14px; background: rgba(255,255,255,0.96); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
         .grade-horarios { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin-top: 10px; }
-        .btn-hora { border: 1px solid #c8dced; background: #f2f9ff; color: #0d5685; border-radius: 10px; padding: 10px; font-weight: bold; cursor: pointer; }
+        .btn-hora { border: 1px solid #c8dced; background: #f2f9ff; color: #0d5685; border-radius: 12px; padding: 10px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
         .btn-hora.ativo { background: var(--blue); border-color: #9fd8f5; color: #053b5c; }
         .locais-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px dashed #dbe8f2; }
         .locais-opcoes { display: flex; gap: 14px; flex-wrap: wrap; }
         .locais-opcoes label { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #39546a; margin: 0; font-weight: 600; }
         .locais-opcoes input { width: auto; margin: 0; }
         .status-local { margin-top: 8px; font-size: 12px; color: #5b7184; }
-        .status { font-size: 13px; color: #666; margin: 0; }
+        .status { font-size: 13px; color: var(--soft-ink); margin: 0; }
         .bloco-titulo { margin: 0 0 10px; font-size: 16px; color: #204863; }
         .compras-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 12px; }
-        .tabela-wrap { border: 1px solid #e2ebf3; border-radius: 10px; overflow: hidden; }
+        .tabela-wrap { border: 1px solid #e2ebf3; border-radius: 14px; overflow: hidden; background: rgba(255,255,255,0.92); }
         .tabela-wrap table { width: 100%; border-collapse: collapse; font-size: 13px; }
         .tabela-wrap th, .tabela-wrap td { border-bottom: 1px solid #e9f0f6; padding: 8px; text-align: left; }
         .tabela-wrap th { background: #f4f9ff; color: #30516b; font-size: 12px; }
         .tabela-wrap tr:last-child td { border-bottom: none; }
         .qtd-servico { width: 62px; padding: 6px; border: 1px solid #cfe1ef; border-radius: 8px; }
-        .btn-add { border: 1px solid #b9d8ef; background: #ecf7ff; color: #0e5a8b; border-radius: 8px; padding: 7px 10px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .btn-add { border: 1px solid #b9d8ef; background: #ecf7ff; color: #0e5a8b; border-radius: 10px; padding: 7px 10px; font-size: 11px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .aviso-deslocamento { margin: 8px 0 0; font-size: 12px; color: #446078; }
-        .carrinho { border: 1px solid #e2ebf3; border-radius: 10px; padding: 10px; background: #fbfdff; }
+        .carrinho { border: 1px solid #e2ebf3; border-radius: 14px; padding: 12px; background: linear-gradient(180deg, #ffffff, #fbfdff); box-shadow: var(--shadow-md); }
         .carrinho h3 { margin: 0 0 8px; font-size: 14px; color: #2d4c65; }
         .item-carrinho { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; padding: 6px 0; border-bottom: 1px dashed #e4edf4; }
         .item-carrinho:last-child { border-bottom: none; }
@@ -48,14 +49,14 @@
         .linha-total { display: flex; justify-content: space-between; margin-top: 8px; font-size: 13px; color: #2f4f68; }
         .linha-total.grande { margin-top: 10px; padding-top: 8px; border-top: 1px solid #d7e6f2; font-weight: bold; font-size: 15px; color: #143d5b; }
         .campo-km { margin-top: 8px; }
-        .campo-km input { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 8px; border: 1px solid #cfe1ef; }
+        .campo-km input { width: 100%; box-sizing: border-box; padding: 8px; border-radius: 10px; border: 1px solid #cfe1ef; }
         .grid-enderecos { display: grid; grid-template-columns: 1fr; gap: 6px; margin-top: 8px; }
         .acoes-maps { display: flex; gap: 8px; margin-top: 8px; }
-        .btn-maps { border: 1px solid #9bccec; background: #e9f6ff; color: #09517e; border-radius: 8px; padding: 8px 10px; font-size: 11px; font-weight: bold; cursor: pointer; }
+        .btn-maps { border: 1px solid #9bccec; background: #e9f6ff; color: #09517e; border-radius: 10px; padding: 8px 10px; font-size: 11px; font-weight: bold; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
         .status-maps { margin-top: 6px; font-size: 11px; color: #567288; }
         .vazio-carrinho { font-size: 12px; color: #6d8294; }
-        .btn-confirmar { margin-top: 12px; width: 100%; border: none; border-radius: 10px; background: var(--blue); color: #053b5c; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; }
-        .painel-status { margin-top: 12px; border: 1px solid #d9e8f3; border-radius: 12px; padding: 12px; background: #f8fcff; }
+        .btn-confirmar { margin-top: 12px; width: 100%; border: none; border-radius: 12px; background: linear-gradient(135deg, #9fdff9, #7ecceb); color: #053b5c; font-size: 14px; font-weight: bold; padding: 12px; cursor: pointer; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
+        .painel-status { margin-top: 12px; border: 1px solid #d9e8f3; border-radius: 16px; padding: 12px; background: linear-gradient(180deg, #fbfeff, #f5fbff); box-shadow: var(--shadow-md); }
         .painel-status h3 { margin: 0 0 8px; font-size: 14px; color: #264863; }
         .resumo-status { margin-top: 8px; border-top: 1px dashed #d5e5f2; padding-top: 8px; }
         .resumo-status .linha { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: #36536a; margin-top: 4px; }
@@ -65,9 +66,12 @@
         .badge-status.aceito { background: #def4e6; color: #1f6a36; }
         .badge-status.recusado { background: #fde4e4; color: #8d2c2c; }
 
+        .bloco input:focus, .bloco select:focus, .campo-km input:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
+        .btn-voltar:hover, .btn-hora:hover, .btn-add:hover, .btn-maps:hover, .btn-confirmar:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
+
         @media (max-width: 720px) {
             body { padding: 12px; }
-            .card { padding: 14px; }
+            .card { padding: 14px; border-radius: 16px; }
             .dados { grid-template-columns: 1fr; }
             .compras-grid { grid-template-columns: 1fr; }
         }
@@ -173,18 +177,9 @@
 </div>
 
 <script>
-    const firebaseConfig = {
-        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
-        authDomain: "my-hair-v2.firebaseapp.com",
-        projectId: "my-hair-v2",
-        storageBucket: "my-hair-v2.appspot.com",
-        messagingSenderId: "672931938550",
-        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
-    };
+    const { flagDevAtiva, sanitizarId, parseMoeda, formatarMoeda, hojeISO } = window.MyHairCore;
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    window.MyHairCore.ensureFirebaseApp();
 
     const auth = firebase.auth();
     const db = firebase.firestore();
@@ -192,11 +187,6 @@
     const params = new URLSearchParams(window.location.search);
     const prestadorId = params.get('prestadorId') || '';
     const prestadorNomeParam = params.get('prestadorNome') || '';
-
-    function flagDevAtiva(valor) {
-        const texto = String(valor || '').trim().toLowerCase();
-        return texto === '1' || texto === 'true' || texto === 'dev' || texto === 'on' || texto === 'yes' || texto === 'sim';
-    }
 
     const modoDesenvolvedorAtivo = flagDevAtiva(params.get('dev'))
         || flagDevAtiva(params.get('modo'))
@@ -215,33 +205,12 @@
     let inicializacaoPaginaEmAndamento = false;
     const TAXA_DESLOCAMENTO_POR_KM_TRECHO = 2;
 
-    function sanitizarId(valor) {
-        return String(valor || '').replace(/[^a-zA-Z0-9_-]/g, '_');
-    }
-
     function normalizarTexto(valor) {
         return String(valor || '')
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
             .toLowerCase()
             .trim();
-    }
-
-    function parseMoeda(valor) {
-        if (typeof valor === 'number') {
-            return Number.isFinite(valor) ? valor : 0;
-        }
-        const numero = String(valor || '')
-            .replace(/\s/g, '')
-            .replace(/\./g, '')
-            .replace(',', '.')
-            .replace(/[^\d.-]/g, '');
-        const convertido = Number(numero);
-        return Number.isFinite(convertido) ? convertido : 0;
-    }
-
-    function formatarMoeda(valor) {
-        return `R$ ${Number(valor || 0).toFixed(2).replace('.', ',')}`;
     }
 
     function montarEnderecoCompleto(dados) {
@@ -790,14 +759,6 @@
         }
     }
 
-    function hojeISO() {
-        const hoje = new Date();
-        const ano = hoje.getFullYear();
-        const mes = String(hoje.getMonth() + 1).padStart(2, '0');
-        const dia = String(hoje.getDate()).padStart(2, '0');
-        return `${ano}-${mes}-${dia}`;
-    }
-
     function normalizarSlotAgenda(valorSlot) {
         if (!valorSlot) {
             return { disponivel: false, clienteNome: '', clienteId: '' };
@@ -1049,6 +1010,13 @@
     }
 
     async function solicitarAgendamento() {
+        const btnConfirmar = document.getElementById('btnConfirmar');
+        const textoOriginal = btnConfirmar ? btnConfirmar.textContent : 'SOLICITAR AGENDAMENTO';
+
+        if (btnConfirmar && btnConfirmar.disabled) {
+            return;
+        }
+
         if (clienteAtual.id === 'anonimo') {
             alert('Faça login como cliente para solicitar um horário.');
             return;
@@ -1096,49 +1064,64 @@
         const taxaDeslocamento = calcularTaxaDeslocamento();
         const valorTotal = subtotalServicos + taxaDeslocamento;
 
-        const docId = `sol_${sanitizarId(clienteAtual.id)}__${sanitizarId(prestadorId)}__${data.replace(/-/g, '')}_${horaSelecionada.replace(':', '')}`;
-        const ref = db.collection('solicitacoes_agendamento').doc(docId);
-
-        const agendaDia = prestadorAtual.agenda?.[data] || {};
-        const slot = normalizarSlotAgenda(agendaDia[horaSelecionada]);
-        if (!slot.disponivel || slot.clienteNome) {
-            alert('Esse horário não está mais disponível.');
-            await carregarPrestador();
-            listarHorariosDisponiveis();
-            return;
+        if (btnConfirmar) {
+            btnConfirmar.disabled = true;
+            btnConfirmar.textContent = 'ENVIANDO...';
         }
 
-        await ref.set({
-            prestadorId: prestadorAtual.idSistema || prestadorAtual.idDoc || prestadorId,
-            prestadorNome: prestadorAtual.fantasia || prestadorAtual.nome || 'Prestador',
-            clienteId: clienteAtual.id,
-            clienteNome: clienteAtual.nome,
-            localPrestacao,
-            carrinhoServicos: carrinho,
-            subtotalServicos,
-            taxaDeslocamento,
-            distanciaKm,
-            distanciaFonte: localPrestacao === 'domicilio'
-                ? (temGoogleMapsConfigurado() ? 'google_maps' : 'manual')
-                : 'nao_aplicavel',
-            valorTotal,
-            data,
-            hora: horaSelecionada,
-            status: 'pendente',
-            mensagemPrestador: 'Aguardando resposta do prestador.',
-            criadoEm: new Date().toISOString(),
-        }, { merge: true });
+        try {
+            const docId = `sol_${sanitizarId(clienteAtual.id)}__${sanitizarId(prestadorId)}__${data.replace(/-/g, '')}_${horaSelecionada.replace(':', '')}`;
+            const ref = db.collection('solicitacoes_agendamento').doc(docId);
 
-        solicitacaoAtualId = docId;
-        monitorarSolicitacao(solicitacaoAtualId);
-        renderizarStatusSolicitacao({
-            status: 'pendente',
-            mensagemPrestador: 'Aguardando resposta do prestador.',
-            subtotalServicos,
-            taxaDeslocamento,
-            valorTotal,
-        });
-        alert('Solicitação enviada com sucesso.');
+            const agendaDia = prestadorAtual.agenda?.[data] || {};
+            const slot = normalizarSlotAgenda(agendaDia[horaSelecionada]);
+            if (!slot.disponivel || slot.clienteNome) {
+                alert('Esse horário não está mais disponível.');
+                await carregarPrestador();
+                listarHorariosDisponiveis();
+                return;
+            }
+
+            await ref.set({
+                prestadorId: prestadorAtual.idSistema || prestadorAtual.idDoc || prestadorId,
+                prestadorNome: prestadorAtual.fantasia || prestadorAtual.nome || 'Prestador',
+                clienteId: clienteAtual.id,
+                clienteNome: clienteAtual.nome,
+                localPrestacao,
+                carrinhoServicos: carrinho,
+                subtotalServicos,
+                taxaDeslocamento,
+                distanciaKm,
+                distanciaFonte: localPrestacao === 'domicilio'
+                    ? (temGoogleMapsConfigurado() ? 'google_maps' : 'manual')
+                    : 'nao_aplicavel',
+                valorTotal,
+                data,
+                hora: horaSelecionada,
+                status: 'pendente',
+                mensagemPrestador: 'Aguardando resposta do prestador.',
+                criadoEm: new Date().toISOString(),
+            }, { merge: true });
+
+            solicitacaoAtualId = docId;
+            monitorarSolicitacao(solicitacaoAtualId);
+            renderizarStatusSolicitacao({
+                status: 'pendente',
+                mensagemPrestador: 'Aguardando resposta do prestador.',
+                subtotalServicos,
+                taxaDeslocamento,
+                valorTotal,
+            });
+            alert('Solicitação enviada com sucesso.');
+        } catch (error) {
+            console.error('Erro ao solicitar agendamento:', error);
+            alert('Não foi possível enviar a solicitação agora. Tente novamente.');
+        } finally {
+            if (btnConfirmar) {
+                btnConfirmar.disabled = false;
+                btnConfirmar.textContent = textoOriginal;
+            }
+        }
     }
 
     function configurarEventosPagina() {

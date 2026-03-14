@@ -7,19 +7,33 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <script src="scripts/myhair_core.js"></script>
     <script src="scripts/app_permissoes.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; color: #000; }
-        header { background-color: #fff; padding: 16px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,0.08); border-radius: 12px; margin-bottom: 12px; max-width: 320px; margin-left: auto; margin-right: auto; }
-        main { padding: 10px; max-width: 320px; margin: 0 auto; }
-        .form-card { background: white; padding: 14px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h2 { font-size: 13px; border-bottom: 2px solid #b3e5fc; padding-bottom: 6px; margin-top: 6px; text-transform: uppercase; text-align: center; }
-        label { display: block; margin-top: 8px; font-weight: bold; font-size: 11px; }
-        input { width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
-        .btn-save { width: 100%; padding: 10px; background-color: #b3e5fc; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 12px; font-size: 14px; }
-        .btn-voltar { display: inline-block; margin-top: 10px; text-decoration: none; background: #f3f3f3; color: #4c4c4c; border-radius: 8px; padding: 7px 12px; font-size: 11px; font-weight: bold; }
+        :root { --pink: #fce4ec; --blue: #b3e5fc; --cream: #fffaf6; --ink: #223142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
+        body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.78), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.35), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; color: var(--ink); min-height: 100vh; padding: 20px; }
+        .login-card { width: 100%; max-width: 360px; margin: 16px auto; background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); padding: 20px; border-radius: 18px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.75); box-sizing: border-box; }
+        header { background-color: transparent; padding: 0 0 14px; text-align: center; border-bottom: 1px solid #eef3f7; margin-bottom: 14px; }
+        header h1 { margin: 0; font-size: 28px; letter-spacing: -1px; }
+        header p { margin: 4px 0 0; font-size: 12px; color: var(--soft-ink); }
+        main { padding: 0; max-width: 320px; margin: 0 auto; }
+        .form-card { background: linear-gradient(180deg, #ffffff, #fbfdff); padding: 16px; border-radius: 14px; box-shadow: var(--shadow-md); border: 1px solid var(--line); }
+        h2 { font-size: 13px; border-bottom: 2px solid #b3e5fc; padding-bottom: 6px; margin-top: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.4px; }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 11px; }
+        input { width: 100%; padding: 10px 11px; margin-top: 4px; border: 1px solid #d7e2eb; border-radius: 10px; box-sizing: border-box; font-size: 13px; background: rgba(255,255,255,0.96); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+        .btn-save { width: 100%; padding: 12px; background: linear-gradient(135deg, #9fdff9, #7ecceb); border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 14px; font-size: 14px; color: #043a5a; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
+        .btn-voltar { display: inline-block; margin: 0 0 12px; text-decoration: none; background: #f3f3f3; color: #4c4c4c; border-radius: 10px; padding: 8px 12px; font-size: 11px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
         .links-aux { text-align: center; margin-top: 10px; font-size: 12px; }
         .links-aux a { color: #0288d1; text-decoration: none; font-weight: bold; }
+        .links-aux a:hover { text-decoration: underline; }
+        input:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
+        .btn-save:hover, .btn-voltar:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
+
+        @media (max-width: 420px) {
+            body { padding: 12px; }
+            .login-card { padding: 16px; border-radius: 16px; }
+            main { max-width: 100%; }
+        }
     </style>
 </head>
 <body>
@@ -51,18 +65,7 @@
 </div>
 
 <script>
-    // Configurações do Firebase
-    const firebaseConfig = {
-        apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
-        authDomain: "my-hair-v2.firebaseapp.com",
-        projectId: "my-hair-v2",
-        storageBucket: "my-hair-v2.appspot.com",
-        messagingSenderId: "672931938550",
-        appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
-    };
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
+    window.MyHairCore.ensureFirebaseApp();
     const auth = firebase.auth();
     const db = firebase.firestore();
 
