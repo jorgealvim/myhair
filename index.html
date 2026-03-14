@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Login</title>
+        <!-- Firebase SDKs -->
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background-color: #fce4ec; margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
         
@@ -81,6 +84,18 @@
         localStorage.setItem('usuarioID', novoID);
         window.location.href = "cadastrogeral.html";
     };
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBU0ctjAg0FUXT-NXjsTqmr5zta5VMKo-0",
+      authDomain: "my-hair-v2.firebaseapp.com",
+      projectId: "my-hair-v2",
+      storageBucket: "my-hair-v2.firebasestorage.app",
+      messagingSenderId: "672931938550",
+      appId: "1:672931938550:web:fb7ffd0cd9f0fd95236cd7"
+    };
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
 
     // Botão Entrar encaminha para a Visão Geral
     document.getElementById('btn-entrar').addEventListener('click', () => {
