@@ -116,6 +116,47 @@
             box-shadow: var(--shadow-md);
             margin-bottom: 14px;
         }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        th {
+            text-align: left;
+            background: #f7fbff;
+            color: #35516b;
+            padding: 10px;
+            font-size: 12px;
+            border-bottom: 1px solid #dce6ef;
+        }
+        td {
+            padding: 10px;
+            border-top: 1px solid #edf1f4;
+            font-size: 12px;
+            vertical-align: top;
+            background: var(--card);
+        }
+                .btn-save {
+                    width: 100%;
+                    padding: 12px;
+                    background: linear-gradient(135deg, #9fdff9, #77c9ef);
+                    border: none;
+                    border-radius: 10px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    font-size: 14px;
+                    color: #073754;
+                    box-shadow: var(--shadow-md);
+                    margin-top: 12px;
+                    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+                }
+                .btn-save:hover {
+                    transform: translateY(-1px);
+                    filter: brightness(1.02);
+                }
+        }
         .secao-topo {
             display: flex;
             justify-content: space-between;
@@ -197,25 +238,18 @@
     </style>
 </head>
 <body>
-<div class="page">
-    <div class="panel">
-        <div class="topo">
-            <div>
-                <h1>Administração</h1>
-                <p>Painel central para acompanhar cadastros, solicitações e atividade do app.</p>
-            </div>
-            <div class="acoes-topo">
-                    <button type="button" id="btnAtualizarAdmin" class="btn btn-principal">ATUALIZAR PAINEL</button>
-                    <div style="display:flex; gap:10px;">
-                        <a id="btnVoltarAdmin" href="index.html" class="btn btn-secundario">VOLTAR</a>
-                        <button type="button" class="btn-voltar" onclick="salvarEDepoisFecharApp()">Salvar e Fechar</button>
-            </div>
-        </div>
-
-        <div class="acesso-box">
-            <strong id="tituloAcessoAdmin">Verificando acesso...</strong>
-            <p id="textoAcessoAdmin">Aguardando autenticação.</p>
-        </div>
+<div class="admin-card">
+    <h1>Administração</h1>
+    <div class="subtitle">Painel central para acompanhar cadastros, solicitações e atividade do app.</div>
+    <div style="display:flex; gap:10px; margin-bottom:18px; justify-content:center;">
+        <button type="button" id="btnAtualizarAdmin" class="btn btn-principal">ATUALIZAR PAINEL</button>
+        <a id="btnVoltarAdmin" href="index.html" class="btn btn-secundario">VOLTAR</a>
+        <button type="button" class="btn-save" onclick="salvarEDepoisFecharApp()">Salvar e Fechar</button>
+    </div>
+    <div class="acesso-box" style="margin-bottom:18px;">
+        <strong id="tituloAcessoAdmin" style="font-size:16px; color:#13212c;">Verificando acesso...</strong>
+        <p id="textoAcessoAdmin" style="font-size:13px; color:var(--text-soft); margin-top:6px;">Aguardando autenticação.</p>
+    </div>
 
         <div class="metricas">
             <div class="card-metrica"><strong>Prestadores</strong><span id="metricaPrestadores">0</span></div>

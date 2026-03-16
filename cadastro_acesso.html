@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro e Acesso - MyHair</title>
+    <link rel="stylesheet" href="public/styles.css">
+    <style>
+        body {
+            background: #f7f7f7;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 400px;
+            margin: 40px auto;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 32px 24px;
+        }
+        .box {
+            margin-bottom: 24px;
+            padding: 16px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fafafa;
+        }
+        .box h2 {
+            margin-top: 0;
+            font-size: 1.2em;
+            color: #333;
+        }
+        .btn-cadastro {
+            display: block;
+            width: 100%;
+            margin-top: 12px;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            background: #4a90e2;
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn-cadastro:hover {
+            background: #357ab8;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="box">
+            <h2>Cadastrar como Parceiro</h2>
+            <p>Cadastre seu salão ou negócio para acessar funcionalidades exclusivas.</p>
+            <a href="#" class="btn-cadastro" onclick="gerarIdEIrParaCadastro()">CADASTRAR COMO PARCEIRO</a>
+        </div>
+        <div class="box">
+            <h2>Cadastrar como Usuário</h2>
+            <p>Crie sua conta para agendar serviços e acessar promoções.</p>
+            <a href="cadastrocliente.html" class="btn-cadastro">CADASTRAR COMO USUÁRIO</a>
+        </div>
+        <div class="box">
+            <h2>Área do Administrador</h2>
+            <p>Gestão de cadastros, manutenção, financeiro e relatórios.</p>
+            <a href="admin.html" class="btn-cadastro">ÁREA DO ADMINISTRADOR</a>
+        </div>
+    </div>
+    <script>
+        function gerarIdEIrParaCadastro() {
+            // Função já existente no projeto
+            window.location.href = 'cadastrogeral.html';
+        }
+    </script>
+</body>
+</html>
