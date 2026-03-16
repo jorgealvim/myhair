@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Serviços</title>
+        <script src="scripts/fechar_app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="scripts/myhair_core.js"></script>
@@ -11,7 +12,7 @@
         :root { --pink: #fce4ec; --blue: #b3e5fc; --dark-blue: #0288d1; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
         body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.76), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.34), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; min-height: 100vh; padding: 24px; color: var(--ink); }
         body.conteudo-protegido { user-select: none; -webkit-user-select: none; }
-        .page { max-width: 960px; margin: 0 auto; }
+        .page { max-width: 960px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         .card { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow-lg); padding: 18px; border: 1px solid rgba(255,255,255,0.75); }
         .topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; border-bottom: 1px solid #edf1f4; padding-bottom: 12px; margin-bottom: 14px; }
         h1 { margin: 0; font-size: 24px; }
@@ -36,10 +37,15 @@
 <div class="page">
     <div class="card">
         <div class="topo">
+<!-- Botão duplicado removido: Fechar Aplicativo -->
             <h1>Serviços</h1>
             <div class="acoes-topo">
                 <a id="btnAgendar" href="#" class="btn-agendar">AGENDAR</a>
-                <a href="visaogeral.html" class="btn-voltar">VOLTAR</a>
+                <div style="display:flex; gap:10px;">
+                    <a href="visaogeral.html" class="btn-voltar">VOLTAR</a>
+                    <a href="perfil.html" class="btn-voltar">MEU PERFIL</a>
+                    <button type="button" class="btn-voltar" onclick="salvarEDepoisFecharApp()">Salvar e Fechar</button>
+                </div>
             </div>
         </div>
         <p id="subtitulo" class="sub">Carregando dados do prestador...</p>

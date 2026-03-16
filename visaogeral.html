@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Explorar</title>
+        <script src="scripts/fechar_app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -14,12 +15,30 @@
         body { font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.75), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.38), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); margin: 0; min-height: 100vh; padding: 20px; color: var(--ink); }
         body.conteudo-protegido { user-select: none; -webkit-user-select: none; }
 
-        .page-shell { width: 100%; max-width: 320px; margin: 0 auto; }
+        .page-shell { width: 100%; max-width: 320px; margin: 0 auto; box-sizing: border-box; }
         .login-card { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); padding: 20px; border-radius: 18px; box-shadow: var(--shadow-lg); width: 100%; box-sizing: border-box; border: 1px solid rgba(255,255,255,0.75); }
         header { background: transparent; padding: 0 0 12px; text-align: center; border-bottom: 1px solid #eef3f7; margin-bottom: 12px; }
         .topo-nav { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 8px; }
-        .btn-voltar { text-decoration: none; border: 1px solid #d4e5f3; background: #f4f9fe; color: #174a72; border-radius: 10px; padding: 8px 12px; font-size: 10px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
-        .btn-meu-perfil { text-decoration: none; border: 1px solid #cfe7ff; background: #eaf6ff; color: #0d4f7b; border-radius: 10px; padding: 8px 12px; font-size: 10px; font-weight: bold; transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease; }
+        .btn-voltar,
+        .btn-meu-perfil {
+            text-decoration: none;
+            border-radius: 10px;
+            padding: 12px 0;
+            font-size: 14px;
+            font-weight: bold;
+            width: 140px;
+            text-align: center;
+            border: 1px solid #d4e5f3;
+            background: #f4f9fe;
+            color: #174a72;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+            display: inline-block;
+        }
+        .btn-meu-perfil {
+            border: 1px solid #cfe7ff;
+            background: #eaf6ff;
+            color: #0d4f7b;
+        }
 
         .categorias-scroll { display: flex; gap: 8px; overflow-x: auto; padding: 8px 0 12px; scrollbar-width: none; }
         .categorias-scroll::-webkit-scrollbar { display: none; } /* Esconde barra no Chrome/Safari */
@@ -106,10 +125,16 @@
 <body>
 
 <div class="page-shell">
+<div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <button class="btn btn-perigo" onclick="fecharAplicativo()">Fechar Aplicativo</button>
+</div>
     <div class="login-card">
         <div class="topo-nav">
             <a id="btnMeuPerfil" href="#" class="btn-meu-perfil" style="display:none;">MEU PERFIL</a>
-            <a id="btnVoltarVisao" href="index.html" class="btn-voltar">VOLTAR</a>
+            <div style="display:flex; gap:10px;">
+                <a id="btnVoltarVisao" href="index.html" class="btn-voltar">VOLTAR</a>
+                <button type="button" class="btn-voltar" onclick="salvarEDepoisFecharApp()">Salvar e Fechar</button>
+            </div>
         </div>
         <header>
             <h1 style="margin:0; font-size: 20px;">MY HAIR</h1>

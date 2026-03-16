@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MY HAIR - Cadastro Cliente</title>
+        <script src="scripts/fechar_app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
@@ -18,7 +19,7 @@
         header h1 { margin: 0; font-size: 28px; letter-spacing: -1px; }
         header p { margin: 4px 0 0; font-size: 12px; color: var(--soft-ink); }
         main { padding: 0; max-width: 320px; margin: 0 auto; }
-        .form-card { background: linear-gradient(180deg, #ffffff, #fbfdff); padding: 16px; border-radius: 14px; box-shadow: var(--shadow-md); border: 1px solid var(--line); }
+        .form-card { background: linear-gradient(180deg, #ffffff, #fbfdff); padding: 16px; border-radius: 14px; box-shadow: var(--shadow-md); border: 1px solid var(--line); max-width: 100%; box-sizing: border-box; overflow-x: auto; }
         h2 { font-size: 13px; border-bottom: 2px solid #b3e5fc; padding-bottom: 6px; margin-top: 0; text-transform: uppercase; text-align: center; letter-spacing: 0.4px; }
         label { display: block; margin-top: 10px; font-weight: bold; font-size: 11px; }
         input { width: 100%; padding: 10px 11px; margin-top: 4px; border: 1px solid #d7e2eb; border-radius: 10px; box-sizing: border-box; font-size: 13px; background: rgba(255,255,255,0.96); transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
@@ -27,9 +28,9 @@
         .links-aux { text-align: center; margin-top: 10px; font-size: 12px; }
         .links-aux a { color: #0288d1; text-decoration: none; font-weight: bold; }
         .links-aux a:hover { text-decoration: underline; }
-        .report-card { margin-top: 14px; }
+        .report-card { margin-top: 14px; max-width: 100%; box-sizing: border-box; }
         .report-toolbar { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; margin-bottom: 12px; }
-        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; max-width: 100%; box-sizing: border-box; overflow-x: auto; }
         .report-box { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 12px; padding: 10px; box-shadow: var(--shadow-md); }
         .report-box strong { display: block; font-size: 11px; color: #5c6c7c; margin-bottom: 6px; }
         .report-box span { font-size: 18px; font-weight: bold; color: #143d5b; }
@@ -49,6 +50,7 @@
             body { padding: 12px; }
             .login-card { padding: 16px; border-radius: 16px; }
             main { max-width: 100%; }
+            .report-card, .report-grid { max-width: 100%; }
             .report-toolbar, .report-grid { grid-template-columns: 1fr; }
         }
     </style>
@@ -58,7 +60,10 @@
 <div class="login-card" style="margin: 16px auto;">
   <header><h1>MY HAIR</h1><p>Cadastro de Cliente</p></header>
   <main>
-            <a href="index.html" class="btn-voltar">VOLTAR</a>
+            <div style="display:flex; gap:10px; margin-bottom:12px;">
+                <a href="index.html" class="btn-voltar">VOLTAR</a>
+                <button type="button" class="btn-voltar" onclick="salvarEDepoisFecharApp()">Salvar e Fechar</button>
+            </div>
       <div class="form-card">
           <form id="formCliente">
               <h2>Crie sua conta</h2>

@@ -116,6 +116,34 @@
             box-shadow: var(--shadow-md);
         }
 
+        #btn-google {
+            border: 2px solid #4285F4;
+            color: #222;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(66,133,244,0.08);
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        #btn-facebook {
+            background: #4267B2;
+            color: #fff;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
         .btn-entrar:hover {
             transform: translateY(-1px);
             filter: brightness(1.02);
@@ -169,8 +197,7 @@
             }
 
             body > div[style*='flex-direction: row'] {
-                flex-direction: column !important;
-                width: 100%;
+                flex-direction: column !important;                width: 100%;
                 max-width: 360px;
                 gap: 12px !important;
                 position: relative;
@@ -199,19 +226,18 @@
         <h1>MY HAIR</h1>
         <div class="subtitle">Gestão para Profissionais de Beleza</div>
 
-    <div style="text-align:left; background:#f7fbff; border:1px solid #dcecf8; border-radius:8px; padding:10px; margin-bottom:10px; font-size:11px; color:#35516b;">
-        <div style="font-weight:bold; margin-bottom:6px;">Permissões do app</div>
-        <div>Notificações: <span id="statusPermNotificacoes">Pendente</span></div>
-        <div>Localização: <span id="statusPermLocalizacao">Pendente</span></div>
-        <div>Câmera: <span id="statusPermCamera">Pendente</span></div>
-        <div id="statusPermissoesInfo" style="margin-top:6px; font-size:10px; color:#4f667b;">Permissões opcionais: você pode continuar usando o app normalmente.</div>
-        <button id="btnPermissoesApp" type="button" style="margin-top:8px; width:100%; padding:8px; border-radius:8px; border:1px solid #b3e5fc; background:#fff; color:#0288d1; font-weight:bold; cursor:pointer;">AUTORIZAR PERMISSÕES</button>
-    </div>
+
+
 
         <input type="email" id="email" placeholder="Seu e-mail">
         <input type="password" id="senha" placeholder="Senha">
-
         <button class="btn-entrar" id="btn-entrar">ENTRAR</button>
+        <button class="btn-entrar" id="btn-google" style="background:#fff; color:#222; border:1px solid #b3e5fc; margin-top:10px; display:flex; align-items:center; justify-content:center; gap:8px;">
+        <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style="width:22px; height:22px;"> Entrar com Google
+        </button>
+        <button class="btn-entrar" id="btn-facebook">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/facebook.svg" alt="Facebook" style="width:22px; height:22px;"> Entrar com Facebook
+        </button>
 
         <div class="links-aux">
                 <a href="esqueci_senha.html">Esqueci minha senha</a>
@@ -261,6 +287,18 @@
 </div>
 
 <script>
+        // Login com Facebook
+        document.getElementById('btn-facebook').addEventListener('click', function() {
+            const provider = new firebase.auth.FacebookAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    // Usuário autenticado com Facebook
+                    window.location.href = 'visaogeral.html';
+                })
+                .catch((error) => {
+                    alert('Erro ao entrar com Facebook: ' + error.message);
+                });
+        });
     // Accordion dos painéis
     document.getElementById('btnTermos').addEventListener('click', function() {
         document.getElementById('painelTermos').style.display = 'block';
@@ -279,6 +317,18 @@
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    });
+    // Login com Google
+    document.getElementById('btn-google').addEventListener('click', function() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider)
+            .then((result) => {
+                // Usuário autenticado com Google
+                window.location.href = 'visaogeral.html';
+            })
+            .catch((error) => {
+                alert('Erro ao entrar com Google: ' + error.message);
+            });
     });
     // Função para gerar o ID e encaminhar para cadastrogeral.html
     function gerarID() {

@@ -8,11 +8,12 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="scripts/myhair_core.js"></script>
-    <style>
+        <script src="scripts/fechar_app.js"></script>
+        <style>
         :root { --pink: #fce4ec; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
         * { box-sizing: border-box; }
         body { margin: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.76), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.34), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); color: var(--ink); min-height: 100vh; padding: 24px; }
-        .page { max-width: 1180px; margin: 0 auto; }
+        .page { max-width: 1180px; margin: 0 auto; width: 100%; box-sizing: border-box; }
         .panel { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.75); padding: 18px; }
         .topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #edf1f4; padding-bottom: 14px; margin-bottom: 16px; }
         .topo h1 { margin: 0; font-size: 28px; letter-spacing: -1px; }
@@ -26,11 +27,11 @@
         .acesso-box { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: var(--shadow-md); margin-bottom: 16px; }
         .acesso-box strong { display: block; font-size: 12px; margin-bottom: 6px; }
         .acesso-box p { margin: 0; font-size: 12px; color: var(--soft-ink); }
-        .metricas { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; }
+        .metricas { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; max-width: 100%; box-sizing: border-box; }
         .card-metrica { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: var(--shadow-md); }
         .card-metrica strong { display: block; font-size: 11px; color: #5c6c7c; margin-bottom: 8px; }
         .card-metrica span { display: block; font-size: 24px; font-weight: bold; color: #143d5b; }
-        .layout { display: grid; grid-template-columns: 1fr; gap: 14px; }
+        .layout { display: grid; grid-template-columns: 1fr; gap: 14px; max-width: 100%; box-sizing: border-box; }
         .secao { background: linear-gradient(180deg, #ffffff, #fbfdff); border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: var(--shadow-md); }
         .secao-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
         .secao-topo h2 { margin: 0; font-size: 18px; color: #174a72; }
@@ -79,8 +80,10 @@
                 <p>Painel central para acompanhar cadastros, solicitações e atividade do app.</p>
             </div>
             <div class="acoes-topo">
-                <button type="button" id="btnAtualizarAdmin" class="btn btn-principal">ATUALIZAR PAINEL</button>
-                <a id="btnVoltarAdmin" href="index.html" class="btn btn-secundario">VOLTAR</a>
+                    <button type="button" id="btnAtualizarAdmin" class="btn btn-principal">ATUALIZAR PAINEL</button>
+                    <div style="display:flex; gap:10px;">
+                        <a id="btnVoltarAdmin" href="index.html" class="btn btn-secundario">VOLTAR</a>
+                        <button type="button" class="btn-voltar" onclick="salvarEDepoisFecharApp()">Salvar e Fechar</button>
             </div>
         </div>
 
@@ -109,6 +112,10 @@
                 <div id="conteudoPrestadores"></div>
             </section>
 
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+                        <button class="btn btn-perigo" onclick="fecharAplicativo()">Fechar Aplicativo</button>
+                    </div>
             <section class="secao">
                 <div class="secao-topo">
                     <div>
