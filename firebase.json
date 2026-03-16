@@ -1,5 +1,6 @@
 {
   "firestore": {
     "rules": "firestore.rules"
-  }
+  },
+  // hosting removido para não publicar o projeto
 }

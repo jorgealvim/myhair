@@ -90,7 +90,7 @@
           <div class="report-toolbar">
               <div>
                   <label for="periodoRelatorioGastos">Período</label>
-                  <select id="periodoRelatorioGastos">
+                  <select '''''id="periodoRelatorioGastos">
                       <option value="diario">Diário</option>
                       <option value="semanal">Semanal</option>
                       <option value="mensal" selected>Mensal</option>
@@ -119,6 +119,37 @@
 </div>
 
 <script>
+        // Preencher formulário se vier com ?id= na URL
+        window.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (id) {
+                try {
+                    const doc = await db.collection('clientes').doc(id).get();
+                    if (doc.exists) {
+                        const dados = doc.data();
+                        document.getElementById('nomeCliente').value = dados.nome || '';
+                        document.getElementById('cpfCliente').value = dados.cpf || '';
+                        document.getElementById('whatsCliente').value = dados.whatsapp || '';
+                        document.getElementById('emailCliente').value = dados.email || '';
+                        // senha não é exibida por segurança
+                        // Troca botão para "Salvar Edição"
+                        const btn = document.querySelector('.btn-save');
+                        btn.innerText = 'SALVAR EDIÇÃO';
+                        btn.onclick = async function() {
+                            const nome = document.getElementById('nomeCliente').value;
+                            const cpf = document.getElementById('cpfCliente').value;
+                            const whats = document.getElementById('whatsCliente').value;
+                            const email = document.getElementById('emailCliente').value.trim();
+                            await db.collection('clientes').doc(id).set({ nome, cpf, whatsapp: whats, email }, { merge: true });
+                            alert('Cadastro atualizado com sucesso!');
+                        };
+                    }
+                } catch (e) {
+                    alert('Erro ao carregar cadastro: ' + (e.message || e));
+                }
+            }
+        });
     const { formatarMoeda } = window.MyHairCore;
 
     window.MyHairCore.ensureFirebaseApp();

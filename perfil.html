@@ -247,6 +247,35 @@
 </div>
 
 <script>
+        // Preencher dados do perfil se vier com ?id= na URL
+        window.addEventListener('DOMContentLoaded', async () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (id) {
+                try {
+                    const doc = await db.collection('usuarios').doc(id).get();
+                    if (doc.exists) {
+                        const dados = doc.data();
+                        document.getElementById('nomeProfissional').textContent = dados.fantasia || dados.nome || '';
+                        document.getElementById('idProfissional').textContent = 'ID: ' + (dados.idSistema || id);
+                        // Permitir edição
+                        document.getElementById('nomeProfissional').contentEditable = true;
+                        // Botão para salvar edição
+                        let btnSalvar = document.createElement('button');
+                        btnSalvar.className = 'btn-update';
+                        btnSalvar.innerText = 'SALVAR EDIÇÃO';
+                        btnSalvar.onclick = async function() {
+                            const nome = document.getElementById('nomeProfissional').textContent;
+                            await db.collection('usuarios').doc(id).set({ fantasia: nome }, { merge: true });
+                            alert('Cadastro atualizado com sucesso!');
+                        };
+                        document.getElementById('nomeProfissional').parentNode.appendChild(btnSalvar);
+                    }
+                } catch (e) {
+                    alert('Erro ao carregar perfil: ' + (e.message || e));
+                }
+            }
+        });
     // Inicialização do Firebase (Use as mesmas credenciais do cadastro)
     const { flagDevAtiva, sanitizarId, formatarMoeda, comporRelacaoId } = window.MyHairCore;
 

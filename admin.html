@@ -8,65 +8,190 @@
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
     <script src="scripts/myhair_core.js"></script>
-        <script src="scripts/fechar_app.js"></script>
-        <style>
-        :root { --pink: #fce4ec; --cream: #fffaf6; --ink: #213142; --soft-ink: #667587; --line: #dbe7f1; --shadow-lg: 0 24px 48px rgba(62, 85, 110, 0.14); --shadow-md: 0 12px 24px rgba(62, 85, 110, 0.1); }
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: 'Segoe UI', sans-serif; background: radial-gradient(circle at top left, rgba(255,255,255,0.76), transparent 28%), radial-gradient(circle at bottom right, rgba(179,229,252,0.34), transparent 24%), linear-gradient(160deg, var(--cream) 0%, var(--pink) 100%); color: var(--ink); min-height: 100vh; padding: 24px; }
-        .page { max-width: 1180px; margin: 0 auto; width: 100%; box-sizing: border-box; }
-        .panel { background: rgba(255,255,255,0.94); backdrop-filter: blur(10px); border-radius: 20px; box-shadow: var(--shadow-lg); border: 1px solid rgba(255,255,255,0.75); padding: 18px; }
-        .topo { display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid #edf1f4; padding-bottom: 14px; margin-bottom: 16px; }
-        .topo h1 { margin: 0; font-size: 28px; letter-spacing: -1px; }
-        .topo p { margin: 4px 0 0; color: var(--soft-ink); font-size: 13px; }
-        .acoes-topo { display: flex; gap: 8px; flex-wrap: wrap; }
-        .btn { border: none; border-radius: 10px; padding: 10px 14px; font-size: 12px; font-weight: bold; text-decoration: none; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease; }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12); filter: brightness(1.01); }
-        .btn-principal { background: linear-gradient(135deg, #9fdff9, #7ecceb); color: #043a5a; box-shadow: 0 8px 18px rgba(18, 89, 132, 0.14); }
-        .btn-secundario { background: #f4f9fe; color: #174a72; border: 1px solid #d4e5f3; }
-        .btn-perigo { background: #fff2f2; color: #a53a3a; border: 1px solid #f0c6c6; }
-        .acesso-box { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: var(--shadow-md); margin-bottom: 16px; }
-        .acesso-box strong { display: block; font-size: 12px; margin-bottom: 6px; }
-        .acesso-box p { margin: 0; font-size: 12px; color: var(--soft-ink); }
-        .metricas { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; max-width: 100%; box-sizing: border-box; }
-        .card-metrica { background: linear-gradient(180deg, #ffffff, #f7fbff); border: 1px solid var(--line); border-radius: 14px; padding: 12px; box-shadow: var(--shadow-md); }
-        .card-metrica strong { display: block; font-size: 11px; color: #5c6c7c; margin-bottom: 8px; }
-        .card-metrica span { display: block; font-size: 24px; font-weight: bold; color: #143d5b; }
-        .layout { display: grid; grid-template-columns: 1fr; gap: 14px; max-width: 100%; box-sizing: border-box; }
-        .secao { background: linear-gradient(180deg, #ffffff, #fbfdff); border: 1px solid var(--line); border-radius: 16px; padding: 14px; box-shadow: var(--shadow-md); }
-        .secao-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .secao-topo h2 { margin: 0; font-size: 18px; color: #174a72; }
-        .secao-topo p { margin: 3px 0 0; font-size: 12px; color: var(--soft-ink); }
-        .acoes-filtro { display: flex; gap: 8px; flex-wrap: wrap; }
-        .campo { width: 100%; padding: 10px 11px; border: 1px solid #d7e2eb; border-radius: 10px; background: rgba(255,255,255,0.96); font-size: 13px; transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
-        .campo:focus { outline: none; border-color: #92cbe8; box-shadow: 0 0 0 4px rgba(179,229,252,0.36); transform: translateY(-1px); }
+    <script src="scripts/fechar_app.js"></script>
+    <style>
+        :root {
+            --bg-rose: #fce4ec;
+            --bg-cream: #fff8f1;
+            --card: rgba(255,255,255,0.92);
+            --line: #dce6ef;
+            --primary: #0f7db8;
+            --primary-soft: #bfe8fb;
+            --text-soft: #5f6b76;
+            --shadow-lg: 0 22px 50px rgba(100, 60, 80, 0.16);
+            --shadow-md: 0 10px 24px rgba(33, 58, 80, 0.1);
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background:
+                radial-gradient(circle at top left, rgba(255,255,255,0.78), transparent 32%),
+                radial-gradient(circle at bottom right, rgba(179,229,252,0.45), transparent 26%),
+                linear-gradient(145deg, var(--bg-cream) 0%, var(--bg-rose) 52%, #f7dfe8 100%);
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 24px 20px 36px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        .admin-card {
+            background: var(--card);
+            backdrop-filter: blur(10px);
+            padding: 22px;
+            border-radius: 18px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid rgba(255,255,255,0.7);
+            width: 100%;
+            max-width: 420px;
+            margin-top: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        h1 { color: #13212c; margin-bottom: 5px; font-size: 30px; letter-spacing: -1.4px; }
+        .subtitle { color: var(--text-soft); font-size: 12px; margin-bottom: 18px; letter-spacing: 0.2px; }
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 12px;
+            font-weight: bold;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 20px rgba(62, 85, 110, 0.12);
+            filter: brightness(1.01);
+        }
+        .btn-principal {
+            background: linear-gradient(135deg, #9fdff9, #77c9ef);
+            color: #073754;
+            box-shadow: var(--shadow-md);
+        }
+        .btn-secundario {
+            background: #f4f9fe;
+            color: #174a72;
+            border: 1px solid #d4e5f3;
+        }
+        .btn-perigo {
+            background: #fff2f2;
+            color: #a53a3a;
+            border: 1px solid #f0c6c6;
+        }
+        .metricas {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+        .card-metrica {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: var(--shadow-md);
+        }
+        .card-metrica strong {
+            display: block;
+            font-size: 11px;
+            color: #5c6c7c;
+            margin-bottom: 8px;
+        }
+        .card-metrica span {
+            display: block;
+            font-size: 24px;
+            font-weight: bold;
+            color: #143d5b;
+        }
+        .secao {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 14px;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 14px;
+        }
+        .secao-topo {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .secao-topo h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #174a72;
+        }
+        .secao-topo p {
+            margin: 3px 0 0;
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+        .acoes-filtro {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .campo {
+            width: 100%;
+            padding: 10px 11px;
+            border: 1px solid #d7e2eb;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.96);
+            font-size: 13px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .campo:focus {
+            outline: none;
+            border-color: #82c9ea;
+            box-shadow: 0 0 0 4px rgba(179,229,252,0.34);
+            transform: translateY(-1px);
+        }
         .campo-inline { min-width: 180px; }
-        table { width: 100%; border-collapse: collapse; background: rgba(255,255,255,0.92); border-radius: 14px; overflow: hidden; }
-        th { text-align: left; background: #f7fbff; color: #35516b; padding: 10px; font-size: 12px; }
-        td { padding: 10px; border-top: 1px solid #edf1f4; font-size: 12px; vertical-align: top; }
-        .status { display: inline-flex; padding: 4px 8px; border-radius: 999px; font-size: 10px; font-weight: bold; text-transform: uppercase; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+        th {
+            text-align: left;
+            background: #f7fbff;
+            color: #35516b;
+            padding: 10px;
+            font-size: 12px;
+        }
+        td {
+            padding: 10px;
+            border-top: 1px solid #edf1f4;
+            font-size: 12px;
+            vertical-align: top;
+        }
+        .status {
+            display: inline-flex;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
         .status.pendente { background: #fff1cc; color: #875f00; }
         .status.aceito { background: #def4e6; color: #1f6a36; }
         .status.recusado { background: #fde4e4; color: #8d2c2c; }
         .status.outro { background: #edf1f4; color: #516273; }
         .acoes-linha { display: flex; gap: 6px; flex-wrap: wrap; }
         .acoes-linha .btn { padding: 7px 10px; font-size: 11px; }
-        .vazio { margin: 0; color: var(--soft-ink); font-size: 12px; }
-
-        @media (max-width: 980px) {
-            .metricas { grid-template-columns: repeat(3, 1fr); }
-        }
-
+        .vazio { margin: 0; color: var(--text-soft); font-size: 12px; }
         @media (max-width: 760px) {
-            body { padding: 12px; }
-            .panel { padding: 14px; border-radius: 16px; }
-            .topo { flex-direction: column; align-items: flex-start; }
-            .metricas { grid-template-columns: repeat(2, 1fr); }
-            .secao-topo { flex-direction: column; align-items: flex-start; }
-            .acoes-filtro { width: 100%; }
-            .campo-inline { min-width: 0; width: 100%; }
-        }
-
-        @media (max-width: 520px) {
+            body { padding: 18px 14px 26px; }
+            .admin-card { max-width: 100%; }
             .metricas { grid-template-columns: 1fr; }
         }
     </style>
@@ -111,10 +236,25 @@
                 </div>
                 <div id="conteudoPrestadores"></div>
             </section>
+        <!-- Box de Manutenção de Cadastro -->
+        <section class="secao">
+            <div class="secao-topo">
+                <div>
+                    <h2>Manutenção de Cadastro</h2>
+                    <p>Gerencie solicitações de manutenção em cadastros de clientes e parceiros.</p>
+                </div>
+            </div>
+            <div style="margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <input type="text" id="buscaManutencao" class="campo campo-inline" placeholder="Buscar por nome, CPF ou CNPJ">
+                <button class="btn btn-principal" id="btnBuscarManutencao">Buscar</button>
+                <button class="btn btn-secundario" id="btnGerarRelatorioManutencao">Gerar Relatório de Manutenção</button>
+            </div>
+            <div id="conteudoManutencao">
+                <p class="vazio">Realize uma busca para exibir cadastros.</p>
+            </div>
+            <div id="relatorioManutencao" style="margin-top:18px; display:none;"></div>
+        </section>
 
-                    </div>
-                    <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-                        <button class="btn btn-perigo" onclick="fecharAplicativo()">Fechar Aplicativo</button>
                     </div>
             <section class="secao">
                 <div class="secao-topo">
@@ -166,6 +306,119 @@
 </div>
 
 <script>
+        // --- Manutenção de Cadastro ---
+        const manutencaoStatus = ['solicitada', 'pendente', 'realizada'];
+        let manutencaoResultados = [];
+        let manutencaoRelatorio = [];
+
+        document.getElementById('btnBuscarManutencao').addEventListener('click', buscarManutencaoCadastro);
+        document.getElementById('btnGerarRelatorioManutencao').addEventListener('click', gerarRelatorioManutencao);
+
+        async function buscarManutencaoCadastro() {
+            const termo = document.getElementById('buscaManutencao').value.trim().toLowerCase();
+            const conteudo = document.getElementById('conteudoManutencao');
+            conteudo.innerHTML = '<p class="vazio">Buscando...</p>';
+            let resultados = [];
+            // Busca em clientes e usuários (parceiros)
+            const [clientesSnap, usuariosSnap] = await Promise.all([
+                db.collection('clientes').get(),
+                db.collection('usuarios').get()
+            ]);
+            const clientes = clientesSnap.docs.map(doc => ({ tipo: 'cliente', id: doc.id, ...doc.data() }));
+            const usuarios = usuariosSnap.docs.map(doc => ({ tipo: 'salao', id: doc.id, ...doc.data() }));
+            resultados = [...clientes, ...usuarios].filter(item => {
+                const nome = (item.nome || item.fantasia || '').toLowerCase();
+                const cpf = (item.cpf || '').replace(/\D/g, '');
+                const cnpj = (item.cnpj || item.documento || '').replace(/\D/g, '');
+                return termo === '' || nome.includes(termo) || cpf.includes(termo) || cnpj.includes(termo);
+            });
+            manutencaoResultados = resultados;
+            renderizarTabelaManutencao(resultados);
+        }
+
+        function renderizarTabelaManutencao(lista) {
+            const conteudo = document.getElementById('conteudoManutencao');
+            if (!lista.length) {
+                conteudo.innerHTML = '<p class="vazio">Nenhum cadastro encontrado.</p>';
+                return;
+            }
+            conteudo.innerHTML = `
+                <table>
+                    <thead>
+                        <tr><th>Nome</th><th>CPF/CNPJ</th><th>Tipo</th><th>Status</th><th>Pedido</th><th>Ações</th></tr>
+                    </thead>
+                    <tbody>
+                        ${lista.map((item, idx) => `
+                            <tr>
+                                <td><input type="text" class="campo" value="${item.nome || item.fantasia || ''}" id="nomeManutencao${idx}"></td>
+                                <td><input type="text" class="campo" value="${item.cpf || item.cnpj || item.documento || ''}" id="docManutencao${idx}"></td>
+                                <td>${item.tipo === 'cliente' ? 'Cliente' : 'Parceiro'}</td>
+                                <td>
+                                    <select class="campo" id="statusManutencao${idx}">
+                                        ${manutencaoStatus.map(st => `<option value="${st}"${item.statusManutencao === st ? ' selected' : ''}>${st.charAt(0).toUpperCase() + st.slice(1)}</option>`).join('')}
+                                    </select>
+                                </td>
+                                <td><input type="text" class="campo" value="${item.pedidoManutencao || ''}" id="pedidoManutencao${idx}"></td>
+                                <td>
+                                    <button class="btn btn-principal" onclick="salvarManutencao(${idx})">Salvar</button>
+                                    <button class="btn btn-secundario" onclick="editarManutencao(${idx})">Editar</button>
+                                    <button class="btn btn-perigo" onclick="excluirManutencao(${idx})">Excluir</button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        window.salvarManutencao = async function(idx) {
+            const item = manutencaoResultados[idx];
+            const nome = document.getElementById(`nomeManutencao${idx}`).value;
+            const doc = document.getElementById(`docManutencao${idx}`).value;
+            const status = document.getElementById(`statusManutencao${idx}`).value;
+            const pedido = document.getElementById(`pedidoManutencao${idx}`).value;
+            const tipo = item.tipo;
+            const ref = tipo === 'cliente' ? db.collection('clientes').doc(item.id) : db.collection('usuarios').doc(item.id);
+            await ref.set({
+                ...(tipo === 'cliente' ? { nome, cpf: doc } : { fantasia: nome, documento: doc }),
+                statusManutencao: status,
+                pedidoManutencao: pedido,
+                ultimaManutencao: new Date().toISOString(),
+                usuarioManutencao: (auth.currentUser && auth.currentUser.email) || 'desconhecido'
+            }, { merge: true });
+            // Salva no relatório
+            manutencaoRelatorio.push({
+                nome, doc, status, pedido, tipo,
+                data: new Date().toLocaleString('pt-BR'),
+                usuario: (auth.currentUser && auth.currentUser.email) || 'desconhecido'
+            });
+            alert('Cadastro atualizado com sucesso!');
+        };
+
+        window.editarManutencao = function(idx) {
+            // Foca nos campos para edição
+            document.getElementById(`nomeManutencao${idx}`).focus();
+        };
+
+        window.excluirManutencao = async function(idx) {
+            const item = manutencaoResultados[idx];
+            if (!confirm('Deseja realmente excluir este cadastro?')) return;
+            const tipo = item.tipo;
+            const ref = tipo === 'cliente' ? db.collection('clientes').doc(item.id) : db.collection('usuarios').doc(item.id);
+            await ref.delete();
+            manutencaoResultados.splice(idx, 1);
+            renderizarTabelaManutencao(manutencaoResultados);
+            alert('Cadastro excluído com sucesso!');
+        };
+
+        function gerarRelatorioManutencao() {
+            const relatorio = manutencaoRelatorio.map(r => `<tr><td>${r.nome}</td><td>${r.doc}</td><td>${r.tipo}</td><td>${r.status}</td><td>${r.pedido}</td><td>${r.data}</td><td>${r.usuario}</td></tr>`).join('');
+            document.getElementById('relatorioManutencao').innerHTML = `
+                <h3>Relatório de Manutenção</h3>
+                <table><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Tipo</th><th>Status</th><th>Pedido</th><th>Data/Hora</th><th>Login</th></tr></thead><tbody>${relatorio}</tbody></table>
+            `;
+            document.getElementById('relatorioManutencao').style.display = 'block';
+        }
     const { flagDevAtiva, formatarMoeda, getAdminEmails, isAdminEmail } = window.MyHairCore;
 
     window.MyHairCore.ensureFirebaseApp();
