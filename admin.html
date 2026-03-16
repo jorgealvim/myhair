@@ -287,25 +287,103 @@
             <section class="secao">
                 <div class="secao-topo">
                     <div>
-                        <h2>Compras</h2>
-                        <p>Solicitações de produtos registradas no app.</p>
-                    </div>
-                    <div class="acoes-filtro">
-                        <select id="filtroStatusCompras" class="campo campo-inline">
-                            <option value="todos">Todos os status</option>
-                            <option value="pendente">Pendentes</option>
-                            <option value="aceito">Aceitos</option>
-                            <option value="recusado">Recusados</option>
-                        </select>
+                        <h2>Financeiro</h2>
+                        <p>Gestão financeira: vendas, serviços e faturamento por período.</p>
                     </div>
                 </div>
-                <div id="conteudoCompras"></div>
+                <div style="margin-bottom:14px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                    <button class="btn btn-principal" id="btnAtualizarFinanceiro">Atualizar Financeiro</button>
+                </div>
+                <div id="boxGestaoFinanceira">
+                    <p class="vazio">Carregue para visualizar dados financeiros.</p>
+                </div>
             </section>
         </div>
     </div>
 </div>
 
 <script>
+            document.getElementById('btnAtualizarFinanceiro').addEventListener('click', carregarFinanceiro);
+
+            async function carregarFinanceiro() {
+                const box = document.getElementById('boxGestaoFinanceira');
+                box.innerHTML = '<p class="vazio">Carregando dados financeiros...</p>';
+                // Busca todos os cadastros e vendas
+                const [clientesSnap, usuariosSnap, agendamentosSnap, comprasSnap] = await Promise.all([
+                    db.collection('clientes').get(),
+                    db.collection('usuarios').get(),
+                    db.collection('solicitacoes_agendamento').get(),
+                    db.collection('solicitacoes_compra_produtos').get()
+                ]);
+                const clientes = clientesSnap.docs.map(doc => ({ tipo: 'cliente', id: doc.id, ...doc.data() }));
+                const usuarios = usuariosSnap.docs.map(doc => ({ tipo: 'salao', id: doc.id, ...doc.data() }));
+                const agendamentos = agendamentosSnap.docs.map(doc => doc.data());
+                const compras = comprasSnap.docs.map(doc => doc.data());
+
+                // Agrupa vendas por cadastro
+                const vendasPorCadastro = {};
+                [...clientes, ...usuarios].forEach(cad => {
+                    vendasPorCadastro[cad.id] = {
+                        nome: cad.nome || cad.fantasia || '-',
+                        tipo: cad.tipo,
+                        totalServicos: 0,
+                        totalProdutos: 0
+                    };
+                });
+                agendamentos.forEach(ag => {
+                    if (ag.clienteId && vendasPorCadastro[ag.clienteId]) {
+                        vendasPorCadastro[ag.clienteId].totalServicos += Number(ag.valorTotal || ag.subtotalServicos || 0);
+                    }
+                });
+                compras.forEach(comp => {
+                    if (comp.clienteId && vendasPorCadastro[comp.clienteId]) {
+                        vendasPorCadastro[comp.clienteId].totalProdutos += Number(comp.total || 0);
+                    }
+                });
+
+                // Faturamento por período
+                const hoje = new Date();
+                const inicioDia = new Date(hoje); inicioDia.setHours(0,0,0,0);
+                const inicioSemana = new Date(hoje); inicioSemana.setDate(hoje.getDate() - hoje.getDay()); inicioSemana.setHours(0,0,0,0);
+                const inicioMes = new Date(hoje); inicioMes.setDate(1); inicioMes.setHours(0,0,0,0);
+                const inicioAno = new Date(hoje); inicioAno.setMonth(0,1); inicioAno.setHours(0,0,0,0);
+
+                let faturamentoDia = 0, faturamentoSemana = 0, faturamentoMes = 0, faturamentoAno = 0;
+                const todasVendas = [...agendamentos, ...compras];
+                todasVendas.forEach(v => {
+                    const data = new Date(v.criadoEm || v.dataRegistro || v.respostaEm || v.dataCadastro || '');
+                    const valor = Number(v.valorTotal || v.subtotalServicos || v.total || 0);
+                    if (data >= inicioDia) faturamentoDia += valor;
+                    if (data >= inicioSemana) faturamentoSemana += valor;
+                    if (data >= inicioMes) faturamentoMes += valor;
+                    if (data >= inicioAno) faturamentoAno += valor;
+                });
+
+                // Monta box
+                box.innerHTML = `
+                    <h3>Vendas por Cadastro</h3>
+                    <table>
+                        <thead><tr><th>Nome</th><th>Tipo</th><th>Total Serviços</th><th>Total Produtos</th></tr></thead>
+                        <tbody>
+                            ${Object.values(vendasPorCadastro).map(v => `
+                                <tr>
+                                    <td>${v.nome}</td>
+                                    <td>${v.tipo === 'cliente' ? 'Cliente' : 'Parceiro'}</td>
+                                    <td>${formatarMoeda(v.totalServicos)}</td>
+                                    <td>${formatarMoeda(v.totalProdutos)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <h3 style="margin-top:18px;">Faturamento</h3>
+                    <table>
+                        <tr><th>Dia</th><td>${formatarMoeda(faturamentoDia)}</td></tr>
+                        <tr><th>Semana</th><td>${formatarMoeda(faturamentoSemana)}</td></tr>
+                        <tr><th>Mês</th><td>${formatarMoeda(faturamentoMes)}</td></tr>
+                        <tr><th>Ano</th><td>${formatarMoeda(faturamentoAno)}</td></tr>
+                    </table>
+                `;
+            }
         // --- Manutenção de Cadastro ---
         const manutencaoStatus = ['solicitada', 'pendente', 'realizada'];
         let manutencaoResultados = [];
@@ -360,9 +438,6 @@
                                 </td>
                                 <td><input type="text" class="campo" value="${item.pedidoManutencao || ''}" id="pedidoManutencao${idx}"></td>
                                 <td>
-                                    <button class="btn btn-principal" onclick="salvarManutencao(${idx})">Salvar</button>
-                                    <button class="btn btn-secundario" onclick="editarManutencao(${idx})">Editar</button>
-                                    <button class="btn btn-perigo" onclick="excluirManutencao(${idx})">Excluir</button>
                                     <button class="btn btn-admin" onclick="abrirCadastroManutencao(${idx})">Abrir Cadastro</button>
                                 </td>
                             </tr>
@@ -385,18 +460,74 @@
                     <div class="secao" style="margin-top:10px;">
                         <h3>Dados do Cadastro</h3>
                         <table>
-                            <tr><th>Nome</th><td>${dados.nome || dados.fantasia || '-'}</td></tr>
-                            <tr><th>CPF/CNPJ</th><td>${dados.cpf || dados.cnpj || dados.documento || '-'}</td></tr>
-                            <tr><th>E-mail</th><td>${dados.email || '-'}</td></tr>
-                            <tr><th>WhatsApp</th><td>${dados.whatsapp || dados.whats || '-'}</td></tr>
-                            <tr><th>Endereço</th><td>${dados.endereco || dados.rua || '-'}</td></tr>
-                            <tr><th>Status Manutenção</th><td>${dados.statusManutencao || '-'}</td></tr>
-                            <tr><th>Pedido Manutenção</th><td>${dados.pedidoManutencao || '-'}</td></tr>
+                            <tr><th>Nome Completo</th><td><input type="text" class="campo" value="${dados.nome || dados.fantasia || ''}" id="detalheNomeManutencao${idx}"></td></tr>
+                            <tr><th>CPF/CNPJ</th><td><input type="text" class="campo" value="${dados.cpf || dados.cnpj || dados.documento || ''}" id="detalheDocManutencao${idx}"></td></tr>
+                            <tr><th>WhatsApp</th><td><input type="text" class="campo" value="${dados.whatsapp || dados.whats || ''}" id="detalheWhatsManutencao${idx}"></td></tr>
+                            <tr><th>E-mail</th><td><input type="email" class="campo" value="${dados.email || ''}" id="detalheEmailManutencao${idx}"></td></tr>
+                            <tr><th>Tipo de Conta</th><td>${dados.tipoConta || '-'}</td></tr>
+                            <tr><th>Nome Fantasia</th><td><input type="text" class="campo" value="${dados.fantasia || ''}" id="detalheFantasiaManutencao${idx}"></td></tr>
+                            <tr><th>Endereço</th><td><input type="text" class="campo" value="${dados.endereco || dados.rua || ''}" id="detalheEnderecoManutencao${idx}"></td></tr>
+                            <tr><th>CEP</th><td><input type="text" class="campo" value="${dados.cep || ''}" id="detalheCepManutencao${idx}"></td></tr>
+                            <tr><th>Bairro</th><td><input type="text" class="campo" value="${dados.bairro || ''}" id="detalheBairroManutencao${idx}"></td></tr>
+                            <tr><th>Cidade</th><td><input type="text" class="campo" value="${dados.cidade || ''}" id="detalheCidadeManutencao${idx}"></td></tr>
+                            <tr><th>Status Manutenção</th><td><select class="campo" id="detalheStatusManutencao${idx}">${manutencaoStatus.map(st => `<option value="${st}"${dados.statusManutencao === st ? ' selected' : ''}>${st.charAt(0).toUpperCase() + st.slice(1)}</option>`).join('')}</select></td></tr>
+                            <tr><th>Pedido Manutenção</th><td><input type="text" class="campo" value="${dados.pedidoManutencao || ''}" id="detalhePedidoManutencao${idx}"></td></tr>
                             <tr><th>Última Manutenção</th><td>${dados.ultimaManutencao ? new Date(dados.ultimaManutencao).toLocaleString('pt-BR') : '-'}</td></tr>
                             <tr><th>Login Manutenção</th><td>${dados.usuarioManutencao || '-'}</td></tr>
                         </table>
+                        <div style="margin-top:12px; display:flex; gap:10px;">
+                            <button class="btn btn-principal" onclick="salvarManutencaoDetalhe(${idx}, '${id}', '${tipo}')">Salvar</button>
+                            <button class="btn btn-secundario" onclick="editarManutencaoDetalhe(${idx})">Editar</button>
+                            <button class="btn btn-perigo" onclick="excluirManutencaoDetalhe(${idx}, '${id}', '${tipo}')">Excluir</button>
+                        </div>
                     </div>
                 `;
+                    window.salvarManutencaoDetalhe = async function(idx, id, tipo) {
+                        // Coleta todos os campos exibidos
+                        const nome = document.getElementById(`detalheNomeManutencao${idx}`).value;
+                        const doc = document.getElementById(`detalheDocManutencao${idx}`).value;
+                        const whats = document.getElementById(`detalheWhatsManutencao${idx}`).value;
+                        const email = document.getElementById(`detalheEmailManutencao${idx}`).value;
+                        const fantasia = document.getElementById(`detalheFantasiaManutencao${idx}`).value;
+                        const endereco = document.getElementById(`detalheEnderecoManutencao${idx}`).value;
+                        const cep = document.getElementById(`detalheCepManutencao${idx}`).value;
+                        const bairro = document.getElementById(`detalheBairroManutencao${idx}`).value;
+                        const cidade = document.getElementById(`detalheCidadeManutencao${idx}`).value;
+                        const status = document.getElementById(`detalheStatusManutencao${idx}`).value;
+                        const pedido = document.getElementById(`detalhePedidoManutencao${idx}`).value;
+                        const ref = tipo === 'cliente' ? db.collection('clientes').doc(id) : db.collection('usuarios').doc(id);
+                        let update = {
+                            statusManutencao: status,
+                            pedidoManutencao: pedido,
+                            ultimaManutencao: new Date().toISOString(),
+                            usuarioManutencao: (auth.currentUser && auth.currentUser.email) || 'desconhecido',
+                            email,
+                            endereco,
+                            cep,
+                            bairro,
+                            cidade,
+                        };
+                        if (tipo === 'cliente') {
+                            update = { ...update, nome, cpf: doc, whatsapp: whats };
+                        } else {
+                            update = { ...update, fantasia, documento: doc, whats, nome };
+                        }
+                        await ref.set(update, { merge: true });
+                        alert('Cadastro atualizado com sucesso!');
+                    };
+
+                    window.editarManutencaoDetalhe = function(idx) {
+                        document.getElementById(`detalheNomeManutencao${idx}`).focus();
+                        // Os campos já estão editáveis, então apenas foca para edição.
+                    };
+
+                    window.excluirManutencaoDetalhe = async function(idx, id, tipo) {
+                        if (!confirm('Deseja realmente excluir este cadastro?')) return;
+                        const ref = tipo === 'cliente' ? db.collection('clientes').doc(id) : db.collection('usuarios').doc(id);
+                        await ref.delete();
+                        document.getElementById('detalhesCadastroManutencao')?.remove();
+                        alert('Cadastro excluído com sucesso!');
+                    };
                 document.getElementById('detalhesCadastroManutencao')?.remove();
                 const box = document.getElementById('conteudoManutencao');
                 const div = document.createElement('div');
