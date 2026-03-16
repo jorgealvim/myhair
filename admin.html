@@ -363,12 +363,47 @@
                                     <button class="btn btn-principal" onclick="salvarManutencao(${idx})">Salvar</button>
                                     <button class="btn btn-secundario" onclick="editarManutencao(${idx})">Editar</button>
                                     <button class="btn btn-perigo" onclick="excluirManutencao(${idx})">Excluir</button>
+                                    <button class="btn btn-admin" onclick="abrirCadastroManutencao(${idx})">Abrir Cadastro</button>
                                 </td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
             `;
+            window.abrirCadastroManutencao = async function(idx) {
+                const item = manutencaoResultados[idx];
+                const tipo = item.tipo;
+                const id = item.id;
+                let doc;
+                if (tipo === 'cliente') {
+                    doc = await db.collection('clientes').doc(id).get();
+                } else {
+                    doc = await db.collection('usuarios').doc(id).get();
+                }
+                const dados = doc.exists ? doc.data() : {};
+                const detalhes = `
+                    <div class="secao" style="margin-top:10px;">
+                        <h3>Dados do Cadastro</h3>
+                        <table>
+                            <tr><th>Nome</th><td>${dados.nome || dados.fantasia || '-'}</td></tr>
+                            <tr><th>CPF/CNPJ</th><td>${dados.cpf || dados.cnpj || dados.documento || '-'}</td></tr>
+                            <tr><th>E-mail</th><td>${dados.email || '-'}</td></tr>
+                            <tr><th>WhatsApp</th><td>${dados.whatsapp || dados.whats || '-'}</td></tr>
+                            <tr><th>Endereço</th><td>${dados.endereco || dados.rua || '-'}</td></tr>
+                            <tr><th>Status Manutenção</th><td>${dados.statusManutencao || '-'}</td></tr>
+                            <tr><th>Pedido Manutenção</th><td>${dados.pedidoManutencao || '-'}</td></tr>
+                            <tr><th>Última Manutenção</th><td>${dados.ultimaManutencao ? new Date(dados.ultimaManutencao).toLocaleString('pt-BR') : '-'}</td></tr>
+                            <tr><th>Login Manutenção</th><td>${dados.usuarioManutencao || '-'}</td></tr>
+                        </table>
+                    </div>
+                `;
+                document.getElementById('detalhesCadastroManutencao')?.remove();
+                const box = document.getElementById('conteudoManutencao');
+                const div = document.createElement('div');
+                div.id = 'detalhesCadastroManutencao';
+                div.innerHTML = detalhes;
+                box.parentNode.insertBefore(div, box.nextSibling);
+            };
         }
 
         window.salvarManutencao = async function(idx) {
