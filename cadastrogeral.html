@@ -69,6 +69,13 @@
 
 <main>
     <div class="form-card">
+        <h2>Localização do Salão</h2>
+        <label>Endereço</label>
+        <input type="text" id="enderecoSalao" placeholder="Digite o endereço completo">
+        <button type="button" onclick="buscarLocalizacao()" class="btn-save">Buscar no mapa</button>
+        <div id="mapaSalao" style="width:100%;height:300px;margin-top:10px;border-radius:10px;border:1px solid #b3e5fc;"></div>
+    </div>
+    <div class="form-card">
         <div style="display:flex; gap:10px; margin-bottom:12px;">
             <button type="button" class="btn-voltar" onclick="history.back()">← VOLTAR</button>
             <button type="button" class="btn-voltar" onclick="salvarEDepoisFecharApp()">Salvar e Fechar</button>
