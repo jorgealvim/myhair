@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro Geral - Jorge Alvim Advocacia</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Jorge Alvim Advocacia</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Início</a></li>
+                <li><a href="servicos.html">Serviços</a></li>
+                <li><a href="sobre.html">Sobre</a></li>
+                <li><a href="contato.html">Contato</a></li>
+                <li><a href="admin.html">Administrador</a></li>
+                <li><a href="cadastre-se.html">Cadastre-se</a></li>
+                <!-- <li><a href="cadastroGeral.html">Cadastro Geral</a></li> -->
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <section>
+            <h2>Cadastro Geral</h2>
+            <div id="listaCadastros"></div>
+        </section>
+    </main>
+    <script>
+    // Exibe os cadastros salvos no localStorage
+    document.addEventListener('DOMContentLoaded', function() {
+        const lista = document.getElementById('listaCadastros');
+        let cadastros = localStorage.getItem('cadastroGeral');
+        cadastros = cadastros ? JSON.parse(cadastros) : [];
+        if (cadastros.length === 0) {
+            lista.innerHTML = '<p>Nenhum cadastro encontrado.</p>';
+        } else {
+            lista.innerHTML = '<ul>' + cadastros.map(c => `<li>${c.nome} - ${c.email || c.cnpj || c.cpf}</li>`).join('') + '</ul>';
+        }
+    });
+    </script>
+    <footer>
+        <p>&copy; 2026 Jorge Alvim Advocacia. Todos os direitos reservados.</p>
+    </footer>
+</body>
+</html>
